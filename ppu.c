@@ -31,6 +31,7 @@ void initPpu(PPU* ppu){
   ppu->data = 0;
   ppu->oamdma = 0;
 
+  ppu->scanLine = 0;
 //  ppu->ppubus = malloc(sizeof(PPUBus));
 
 }

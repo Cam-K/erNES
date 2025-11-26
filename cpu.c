@@ -865,9 +865,6 @@ int bne(CPU* cpu, Bus* bus){
   int cycles = 2;
 
   offset = addressModeDecode(cpu, bus, relative);
-  if(!getBit(cpu->pf, Z)){
-    cpu->pc += offset;
-  }
 
   if(getBit(cpu->pf, Z) != 0){
     cpu->pc += offset;
