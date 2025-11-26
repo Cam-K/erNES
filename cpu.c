@@ -120,7 +120,7 @@ int irq(CPU* cpu, Bus* bus){
 // returns how many cycles have been executed
 int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
   int cyclesCompleted;
-  printf("\t Executing oppcode: %x at %x \n", oppCode, cpu->pc);
+  printf("\t Executing oppcode: %x at %d \n", oppCode, cpu->pc);
   switch(oppCode){
     case 0x00:
       cyclesCompleted = brki(cpu, bus);

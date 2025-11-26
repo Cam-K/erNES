@@ -294,13 +294,13 @@ void initPpuBus(PPUBus* bus, int banks){
 #if NESEMU == 0
 
 uint8_t readPpuBus(PPU* ppu, uint16_t addr){
-  if(ppu->bus->numOfBlocks == 0){
+  if(ppu->ppubus->numOfBlocks == 0){
     return 0;
   }
-  for(int i = 0; i < ppu->bus->numOfBlocks; ++i){
-    if(ppu->bus->memArr[i].startAddr <= addr && ppu->bus->memArr[i].endAddr >= addr){
+  for(int i = 0; i < ppu->ppubus->numOfBlocks; ++i){
+    if(ppu->ppubus->memArr[i].startAddr <= addr && ppu->ppubus->memArr[i].endAddr >= addr){
       //printf("Bus memory block %d being read \n", i);
-      return ppu->bus->memArr[i].contents[addr - ppu->bus->memArr[i].startAddr];
+      return ppu->ppubus->memArr[i].contents[addr - ppu->ppubus->memArr[i].startAddr];
     } 
 
   }
@@ -313,12 +313,12 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
 
 void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
   Mem* mem;
-  if(ppu->bus->numOfBlocks == 0){
+  if(ppu->ppubus->numOfBlocks == 0){
     return;
   }
 
-  for(int i = 0; i < ppu->bus->numOfBlocks; ++i){
-    mem = &(ppu->bus->memArr[i]);
+  for(int i = 0; i < ppu->ppubus->numOfBlocks; ++i){
+    mem = &(ppu->ppubus->memArr[i]);
     if(mem->startAddr <= addr && mem->endAddr >= addr){
 
       if(mem->type == CHRRom)

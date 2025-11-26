@@ -4,7 +4,8 @@
 
 // to compile in code meant for the nes emulator, set this to 1
 // otherwise 0 for cpu only
-#define NESEMU 1
+#define NESEMU 0
+#define SUPPRESSOUTPUT 1
 #define WINDOW_WIDTH 256
 #define WINDOW_HEIGHT 240
 // general.h
