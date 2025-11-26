@@ -334,7 +334,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 }
 #elif NESEMU == 1
 
-int8_t readPpuBus(PPU* ppu, uint16_t addr){
+uint8_t readPpuBus(PPU* ppu, uint16_t addr){
   if(addr >= 0x0000 && addr <= 0x1fff){
     return ppu->chrrom[addr];
   } else if(addr >= 0x2000 && addr <= 0x2fff){

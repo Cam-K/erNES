@@ -235,23 +235,24 @@ void allocateNewFrameBuffer(PPU* ppu){
 
 }
 
-void vblankStart(PPU* ppu){
+void vblankStart(Bus* bus){
   
   printf("vblank start! \n");
   
-  ppu->status = setBit(ppu->status, 7);
-  ppu->vblank = 1;
+  bus->ppu->status = setBit(bus->ppu->status, 7);
+  bus->ppu->vblank = 1;
+  //nmi(bus->cpu, bus);
 
-  writePpuBus(ppu, ppu->addr, ppu->data);
+  writePpuBus(bus->ppu, bus->ppu->addr, bus->ppu->data);
 }
 
 
 
-void vblankEnd(PPU* ppu){
+void vblankEnd(Bus* bus){
   printf("vblank end! \n");
 
-  ppu->status = clearBit(ppu->status, 7);
-  ppu->vblank = 0;
+  bus->ppu->status = clearBit(bus->ppu->status, 7);
+  bus->ppu->vblank = 0;
 
 }
 

@@ -10,6 +10,7 @@
 
 enum DeviceTypePPU {CHRRom, CHRRam, VRam};
 typedef struct _Mem Mem;
+typedef struct _Bus Bus;
 
 typedef struct _PPUBUS {
 
@@ -66,6 +67,8 @@ typedef struct _PPU {
   // variable to track whether the nes is in vertical blanking or not
   int vblank;
   
+  int frames;
+  
   // scanline buffer gets appended to the framebuffer at the end of each rendering cycle
   //
   // the framebuffer gets parsed to the screen when a complete frame is drawn
@@ -91,8 +94,8 @@ void populatePalette(PPU*);
 void renderScanline(PPU*);
 void appendScanline(PPU*, int);
 void vblankToggle(PPU*);
-void vblankStart(PPU*);
-void vblankEnd(PPU*);
+void vblankStart(Bus*);
+void vblankEnd(Bus*);
 
 void allocateNewFrameBuffer(PPU*);
 
