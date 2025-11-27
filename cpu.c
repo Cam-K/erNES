@@ -2092,10 +2092,10 @@ void checkCFlag(CPU* cpu, uint8_t operand1, uint8_t operand2, uint8_t operationF
     }
   }
   if(carry == 1){
-    printf("Setting carry! \n");
+    //printf("Setting carry! \n");
     cpu->pf = setBit(cpu->pf, C);
   } else {
-    printf("Clearing carry! \n");
+    //printf("Clearing carry! \n");
     cpu->pf = clearBit(cpu->pf, C);
   }
 }
