@@ -33,7 +33,8 @@ void initPpu(PPU* ppu){
 
   ppu->scanLine = 0;
   ppu->frames = 0;
-//  ppu->ppubus = malloc(sizeof(PPUBus));
+  
+  //ppu->ppubus = malloc(sizeof(PPUBus));
 
 }
 
@@ -53,6 +54,8 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->wregister = 0;
   ppu->vblank = 0;
 
+  ppu->scanLine = 0;
+  ppu->frames = 0;
 
 }
 
@@ -189,7 +192,7 @@ void renderScanline(PPU* ppu){
     // Fetch a nametable entry from $2000-$2FFF.
     // i / 8 because it increments 1 for every 8 pixels, which is what we want to do if we are fetching a different 
     // pattern table every 8 pixels (width of nametable entries is 8 pixels)
-    nameTableIndice = readPpuBus(ppu, (uint8_t)(0x2000 + i / 8));
+    nameTableIndice = readPpuBus(ppu, (uint8_t)(0x2000 + i));
     
     pixelXBitPlane1 = i % 8;
     pixelXBitPlane2 = (i % 8) + 8;
@@ -206,7 +209,11 @@ void renderScanline(PPU* ppu){
 
     // get pallette information for pixel
     // TODO: Currently just trying to render the nametables itself, irresepctive of the pattern and attribute tables
-    thirtytwobitPixelColour = nameTableIndice;
+    if(nameTableIndice == 0x24){
+      thirtytwobitPixelColour = 0x000000;
+    } else {
+      thirtytwobitPixelColour = 0xffffff;
+    }
     ppu->scanlineBuffer[i] = thirtytwobitPixelColour;
     
     
@@ -258,6 +265,7 @@ void vblankEnd(Bus* bus){
 
   bus->ppu->status = clearBit(bus->ppu->status, 7);
   bus->ppu->vblank = 0;
+  bus->ppu->scanLine = 0;
   bus->ppu->frames++;
 
 }

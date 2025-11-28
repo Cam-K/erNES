@@ -48,14 +48,18 @@ void reset(CPU* cpu, Bus* bus){
 //
 //
 int nmi(CPU* cpu, Bus* bus){
+  printf("NMI triggered! \n");
 
   uint16_t temp;
+  printf("cpu->pc at nmi %x \n", cpu->pc);
 
   // push the msb and lsb of the program counter onto the stack
+  pushStack(cpu, bus, (uint8_t)((cpu->pc & 0xff00) >> 8));
+
   pushStack(cpu, bus, (uint8_t)(cpu->pc & 0x00ff));
-  pushStack(cpu, bus, (uint8_t)(cpu->pc & 0xff00));
 
   // pushes the processor flags onto the stack
+  printf("CPU->pf %x \n", cpu->pf);
   pushStack(cpu, bus, cpu->pf);
 
   // sets the interupt disable flag
@@ -1501,10 +1505,12 @@ int rti(CPU* cpu, Bus* bus){
 
 
 
+  printf("RTI occurs \n");
   cpu->pf = popStack(cpu, bus);
   cpu->pf = setBit(cpu->pf, U);
   cpu->pc = (uint16_t)popStack(cpu, bus);
-  cpu->pc = (cpu->pc | ((uint16_t)popStack(cpu, bus) << 8));
+  cpu->pc = (cpu->pc | (((uint16_t)popStack(cpu, bus)) << 8));
+  printf("cpu->pc after popping %x \n", cpu->pc);
 
 
   // clears the brk flag
@@ -1874,14 +1880,15 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
 
 
 void pushStack(CPU* cpu, Bus* bus, uint8_t val){
+  //printf("Pushing %d onto stack \n", val);
   writeBus(bus, 0x0100 | ((uint16_t)cpu->sp), val);
-  //printf("%d %d \n", 0x0100 | ((uint16_t)cpu->sp), val);
   cpu->sp--;
 }
 
 uint8_t popStack(CPU* cpu, Bus* bus){
-  //printf("popping stack: %x \n", 0x100 | ((uint16_t)(cpu->sp++)));
-  return readBus(bus, 0x0100 | ((uint16_t)(++cpu->sp)));
+  uint8_t temp = readBus(bus, 0x0100 | ((uint16_t)(++cpu->sp)));
+  //printf("Popping %x from the stack \n", temp);
+  return temp;
 }
 
 void checkNFlag(CPU* cpu, uint8_t val){
