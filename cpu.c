@@ -1507,12 +1507,11 @@ int rti(CPU* cpu, Bus* bus){
 
 
 
-  printf("RTI occurs \n");
   cpu->pf = popStack(cpu, bus);
   cpu->pf = setBit(cpu->pf, U);
   cpu->pc = (uint16_t)popStack(cpu, bus);
   cpu->pc = (cpu->pc | (((uint16_t)popStack(cpu, bus)) << 8));
-  //printf("cpu->pc after popping %x \n", cpu->pc);
+  //printf("cpu->pc after popping in rti: %x \n", cpu->pc);
 
 
   // clears the brk flag

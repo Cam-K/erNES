@@ -1,4 +1,5 @@
 #include "general.h"
+#include <stdint.h>
 
 
 uint8_t setBit(uint8_t val, uint8_t bitNum){
@@ -30,4 +31,36 @@ uint8_t bitToBitNum(uint8_t val){
     return -1;
   }
   return i;
+}
+
+
+// these sets of functions get the bit starting from the left,
+//      
+uint8_t getBitFromLeft(uint8_t val, uint8_t bitNum){
+  return (val & 0b10000000 >> bitNum);
+}
+
+uint8_t clearBitFromLeft(uint8_t val, uint8_t bitNum){
+  return val & ~(0b10000000 >> bitNum);
+}
+
+uint8_t setBitFromLeft(uint8_t val, uint8_t bitNum){
+  return val | (0b10000000 >> bitNum);
+}
+
+
+// finds the first instance of a 1-bit in a bitstring
+uint8_t findBit(uint8_t val){
+
+  int placement;
+  for(int i = 0; i < 8; ++i){
+    if(getBit(val, i) != 0){
+      placement = i;
+      break;
+    }
+
+  }
+
+  return placement;
+
 }

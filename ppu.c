@@ -16,8 +16,8 @@ void initPpu(PPU* ppu){
   ppu->scanlineBuffer = malloc(sizeof(uint32_t) * WINDOW_WIDTH);
 
   printf("initializing PPU \n");
-  ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_HEIGHT);
-  for(int i = 0; i < WINDOW_HEIGHT; ++i){
+  ppu->frameBuffer = malloc(sizeof(uint32_t*) * 242);
+  for(int i = 0; i < 242; ++i){
     ppu->frameBuffer[i] = malloc(sizeof(uint32_t) * WINDOW_WIDTH);
   } 
 
@@ -153,9 +153,10 @@ void populatePalette(PPU* ppu){
 // also converts the nes colour palette to rgb values when reading from the frame buffer
 void drawFrameBuffer(PPU* ppu, SDL_Renderer* renderer){
   //printf("drawing framebuffer \n");
+  SDL_RenderClear(renderer);
 
-  for(int i = 0; i < 0x1f; ++i){
-    for(int j = 0; j < 0x20; ++j){
+  for(int i = 0; i < WINDOW_HEIGHT; ++i){
+    for(int j = 0; j < WINDOW_WIDTH; ++j){
       SDL_SetRenderDrawColor(renderer, (ppu->frameBuffer[i][j] & 0xff0000) >> 16, (ppu->frameBuffer[i][j] & 0xff00) >> 8, (ppu->frameBuffer[i][j] & 0xff), 255);
       SDL_RenderDrawPoint(renderer, j, i);
 
@@ -196,43 +197,33 @@ void printNameTable(Bus* bus){
 void renderScanline(PPU* ppu){
   uint8_t currentIndiceBitPlane1;
   uint8_t currentIndiceBitPlane2;
-  uint8_t patternTableIndice;
-  int pixelXBitPlane1;
-  int pixelXBitPlane2;
+  uint16_t patternTableIndice;
+  uint8_t bitPlane1;
+  uint8_t bitPlane2;
+  uint8_t bit1;
+  uint8_t bit2;
+  uint8_t bitsCombined;
   uint8_t pixelValue1;
   uint8_t pixelValue2;
   uint8_t pixelValueFinal;
+  uint16_t offset;
   uint32_t thirtytwobitPixelColour;
   int pixelY;
   uint8_t tempPalette[4];
 
   tempPalette[0] = 0x0f;
-  tempPalette[1] = 0x30;
-  tempPalette[2] = 0x27;
-  tempPalette[3] = 0x2a;
+  tempPalette[1] = 0x2c;
+  tempPalette[2] = 0x38;
+  tempPalette[3] = 0x12;
 
+  /*
+  // CODE FOR RENDERING NAMETABLES ONLY
   for(int i = 0; i < 0x20; ++i){
     // Fetch a nametable entry from $2000-$2FFF.
     // i / 8 because it increments 1 for every 8 pixels, which is what we want to do if we are fetching a different 
     // pattern table every 8 pixels (width of nametable entries is 8 pixels)
-    patternTableIndice = readPpuBus(ppu, (0x2000 + i) + ((uint8_t)(ppu->scanLine / 8) * 32));
+    patternTableIndice = readPpuBus(ppu, (0x2000 + i) + ((uint8_t)(ppu->scanLine) * 32));
     
-    pixelXBitPlane1 = i % 8;
-    pixelXBitPlane2 = (i % 8) + 8;
-    // 
-    // fetches pattern table byte low and high byte
-    // Fetch the low-order byte of an 8x1 pixel sliver of pattern table from $0000-$0FF7 or $1000-$1FF7.
-    //pixelValue1 = getBit(readPpuBus(ppu, nameTableIndice + 0x1000), pixelXBitPlane1);
-    // Fetch the high-order byte of this sliver from an address 8 bytes higher.
-    //pixelValue2 = getBit(readPpuBus(ppu, nameTableIndice + 0x1000 + pixelXBitPlane2), pixelXBitPlane1);
-
-    //pixelValueFinal = pixelValue1 >> pixelXBitPlane1;
-    //pixelValueFinal = pixelValueFinal | (pixelValue2 >> (pixelXBitPlane1 - 1));
-    //
-
-    // get pallette information for pixel
-    // TODO: Currently just trying to render the nametables itself, irresepctive of the pattern and attribute tables
-    //printf("patterntable indice %x for %x \n", patternTableIndice, (0x2000 + i) + ((uint8_t)(ppu->scanLine / 8) * 32));
     if(patternTableIndice == 0x24){
       thirtytwobitPixelColour = 0x000000;
     } else if(patternTableIndice == 0x62){
@@ -247,7 +238,35 @@ void renderScanline(PPU* ppu){
     
 
   }
-  
+  */
+   if(getBit(ppu->ctrl, 4) == 0){
+     offset = 0;
+    } else if (getBit(ppu->ctrl, 4) != 0){
+     offset = 0x1000;
+    }
+ 
+  for(int i = 0; i < WINDOW_WIDTH; ++i){
+    patternTableIndice = readPpuBus(ppu, (0x2000 + (uint16_t)(i / 8)) + ((int)(ppu->scanLine / 8) * 32));
+    
+
+    // patternTableIndice << 4 because this will yield 0x0ff0 when you left shift 0xff for instance
+    //
+    // So indice 0x24 will reside at address 0x0240 for instance
+    // if ppuctrl bit 3 is 0, then use 0x0000 as base, 
+    // else if ppuctrl bit 3 is 1 then use 0x1000 as base
+    bitPlane1 = readPpuBus(ppu, (offset + (patternTableIndice << 4) + (ppu->scanLine % 8)));
+    bitPlane2 = readPpuBus(ppu, (offset + (patternTableIndice << 4) + (ppu->scanLine % 8) + 8));
+    bit1 = getBitFromLeft(bitPlane1, i % 8);
+    bit2 = getBitFromLeft(bitPlane2, i % 8);
+    bit1 = bit1 >> findBit(bit1);
+    bit2 = bit2 >> findBit(bit2);
+    bit2 = bit2 << 1;
+    bitsCombined = bit1 | bit2;
+    thirtytwobitPixelColour = ppu->palette[tempPalette[bitsCombined]];
+    ppu->scanlineBuffer[i] = thirtytwobitPixelColour;
+    
+
+  }
   
   
   
@@ -316,8 +335,6 @@ void vblankToggle(PPU* ppu){
     ppu->vblank = 0;
   }
   
-  // latches data at address $2006/$2007 and writes it to the appropriate ppu address
-  writePpuBus(ppu, ppu->addr, ppu->data);
   
 
 }
@@ -330,7 +347,7 @@ void vblankToggle(PPU* ppu){
 void appendScanline(PPU* ppu){
 
   // segfault on ppu->scanLine = 240 occurs here
-  for(int i = 0; i < 0x20; ++i){
+  for(int i = 0; i < WINDOW_WIDTH; ++i){
     ppu->frameBuffer[ppu->scanLine][i] = ppu->scanlineBuffer[i];
   }
 

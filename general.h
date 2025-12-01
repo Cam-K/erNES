@@ -19,4 +19,10 @@ uint8_t setBit(uint8_t, uint8_t);
 uint8_t clearBit(uint8_t, uint8_t);
 uint8_t getBit(uint8_t, uint8_t);
 
+uint8_t setBitFromLeft(uint8_t, uint8_t);
+uint8_t clearBitFromLeft(uint8_t, uint8_t);
+uint8_t getBitFromLeft(uint8_t, uint8_t);
+
+uint8_t findBit(uint8_t);
+
 uint8_t bitToBitNum(uint8_t);
