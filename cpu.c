@@ -33,15 +33,9 @@ void reset(CPU* cpu, Bus* bus){
     //reads upper byte (little endian)
     cpu->pc = cpu->pc | ((uint16_t)readBus(bus, 0xfffd) << 8);
     
-    bus->controller1.strobe = 0;
-    bus->controller1.strobeCount = 0;
-    bus->controller1.buttons = 0x00;
-    bus->controller2.buttons = 0x00;
     cpu->nmiInterruptFlag = 0;
     
     cpu->cycles = 0;
-    //printf("cpu->pc %x \n", cpu->pc);
-    
 
 }
 

@@ -153,7 +153,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->ppu->oamaddr = val;
         break;
       case 0x2004:
-        bus->ppu->oamdata = val;
+        bus->ppu->oam[bus->ppu->oamaddr] = val;
         break;
       case 0x2005:
         if(bus->ppu->wregister == 1){
@@ -192,14 +192,16 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         break;
     }
   } else if(addr == 0x4014){
-    bus->oamdma = val;
+    bus->ppu->oamdma = val;
+    dmaTransfer(bus);
   } else if(addr == 0x4016){
 
     if(bus->controller1.strobed == 0 && val == 1){
       bus->controller1.strobed = 1;
-      bus->controller1.latchedButtons = bus->controller1.sdlButtons;
     } else if(bus->controller1.strobed == 1 && val == 0){
       bus->controller1.strobed = 0;
+      bus->controller1.latchedButtons = bus->controller1.sdlButtons;
+      bus->controller1.readCount = 0;
     } 
 
     return;
@@ -277,7 +279,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         return bus->ppu->oamaddr;
       case 0x2004:
         //printf("Reading oamdata \n");
-        return bus->ppu->oamdata;
+        return bus->ppu->oam[bus->ppu->oamaddr];
       case 0x2005:
         if(bus->ppu->wregister == 0){
           return bus->ppu->scroll & 0xff;
@@ -313,7 +315,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           bus->controller1.readCount++;
           return getBit(bus->controller1.latchedButtons, 4) >> 4;
         case 5:
-          bus->controller1.readCount++;
+          bus->controller1.readCount++; 
           return getBit(bus->controller1.latchedButtons, 5) >> 5;
         case 6:
           bus->controller1.readCount++;

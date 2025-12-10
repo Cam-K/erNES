@@ -30,10 +30,10 @@ typedef struct _PPU {
   uint8_t status;
   uint8_t oamaddr;
   uint8_t oamdata;
+  uint8_t oamdma;
   uint16_t scroll;
   uint16_t addr;
   uint8_t data;
-  uint8_t oamdma;
   
 
   // 0 -  vertical arrangement
@@ -46,9 +46,9 @@ typedef struct _PPU {
   // 8192 array of bytes 
   uint8_t* chrrom;
 
-  // should be initialized as [64][4]
+  // should be initialized as [256]
   // used for sprites
-  uint8_t** oam;
+  uint8_t* oam;
 
   // used to store nametables (buffer in memory that stores what sprites and which coordinates 
   // they are displayed at)
@@ -109,6 +109,12 @@ void allocateNewFrameBuffer(PPU*);
 void printNameTable(Bus*);
 
 int getAttributeQuadrant(int, int);
+
+void dmaTransfer(Bus*);
+
+void renderScanlineForeground(PPU*);
+
+
 
 // draws the completed framebuffer to screen in SDL
 void drawFrameBuffer(PPU*, SDL_Renderer*, SDL_Texture*);

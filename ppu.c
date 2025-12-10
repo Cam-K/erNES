@@ -64,19 +64,26 @@ void resetPpu(PPU* ppu, int powerFlag){
 
 }
 
-// parses nametables from an array containing rom contents in ines format
-// or from a space in memory
-void parseNametables(uint8_t*){
-  
+// dmaTransfer()
+//   used to facilitate the dma transfer between CPU memory and PPU OAM (copies a page of 0xff bytes into oam)
+// inputs:
+//   bus - machine to act upon
+void dmaTransfer(Bus* bus){
+  uint16_t addr;
 
+  for(int i = 0; i <= 0xff; ++i){
+    /*
+    if(i % 4 == 0){
+      printf("oam dma ");;
+    }*/
+    
+    addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
+    bus->ppu->oam[i] = readBus(bus, addr);    
+   // printf("%x ", bus->ppu->oam[i]);
+
+  }
+  //printf("\n");
 }
-
-void parsePatterntables(uint8_t*){
-  
-
-
-}
-
 // populatePalette()
 //   hard-coding 24-bit rgb values for each of the nes' 64 colours
 void populatePalette(PPU* ppu){
@@ -168,10 +175,10 @@ void drawFrameBuffer(PPU* ppu, SDL_Renderer* renderer, SDL_Texture* texture){
 
     }
   }
+
   SDL_UnlockTexture(texture);
   SDL_RenderCopy(renderer, texture, NULL, NULL);
   SDL_RenderPresent(renderer);
-  //allocateNewFrameBuffer(ppu);
   free(pitch);
 
 }
@@ -218,9 +225,15 @@ void renderScanline(PPU* ppu){
   uint8_t pixelValue2;
   uint8_t pixelValueFinal;
   uint16_t offset;
+  uint16_t spriteOffset;
+  int spriteEvalCounter = 0;
+  uint16_t spritePatternTableOffset;
   uint32_t thirtytwobitPixelColour;
+  uint16_t spritePatternTableIndice;
   int pixelY;
   uint8_t tempPalette[4];
+  uint16_t oamIndices[8];
+
 
   tempPalette[0] = 0x0f;
   tempPalette[1] = 0x2c;
@@ -228,24 +241,49 @@ void renderScanline(PPU* ppu){
   tempPalette[3] = 0x12;
 
 
-   if(getBit(ppu->ctrl, 4) == 0){
-     offset = 0;
-    } else if (getBit(ppu->ctrl, 4) != 0){
-     offset = 0x1000;
+  if(getBit(ppu->ctrl, 4) == 0){
+    offset = 0;
+  } else if (getBit(ppu->ctrl, 4) != 0){
+    offset = 0x1000;
+  }
+
+  if(getBit(ppu->ctrl, 3) == 0){
+      spriteOffset = 0;
+  } else if(getBit(ppu->ctrl, 3) != 0){
+      spriteOffset = 0x1000;
+  }
+
+
+  // Sprite Evaluation
+  //   Does a linear search through the 
+  for(int i = 0; i < 256; i = i + 4){
+
+    // ppu->oam[i] gets the Y coordinate of the tile
+    if(ppu->oam[i] <= ppu->scanLine && ppu->oam[i] + 8 >= ppu->scanLine){
+      oamIndices[spriteEvalCounter] = i;
+      spriteEvalCounter++;
     }
+
+    // i = i + 4 because we are iterating through the OAM
+    if(spriteEvalCounter >= 8){
+      break;
+    }
+
+  }
     
+
  
   for(int i = 0; i < WINDOW_WIDTH; ++i){
     // fetch nametable entry
     patternTableIndice = readPpuBus(ppu, (0x2000 + (uint16_t)(i / 8)) + ((int)(ppu->scanLine / 8) * 32));
     
     ppu->vregister2 = (uint16_t)(i / 8) + ((int)(ppu->scanLine / 8) * 32);
-   //printf("vregistger2 %x \n", ppu->vregister2);
-   //printf("formula %x \n",  0x23c0 | (ppu->vregister2 & 0x0c00) | ((ppu->vregister2 >> 4) & 0x38) | ((ppu->vregister2 >> 2) & 0x07));
+
     // fetch attributetable byte using formula
     attributeTableByte = readPpuBus(ppu, 0x23c0 | (ppu->vregister2 & 0x0c00) | ((ppu->vregister2 >> 4) & 0x38) | ((ppu->vregister2 >> 2) & 0x07));
     attributeTableQuandrant = getAttributeQuadrant(i, ppu->scanLine);
 
+    // find which quadrant the beam resides in
     if(attributeTableQuandrant == 0){
       attributeTableByte = attributeTableByte & 0b11;
     } else if (attributeTableQuandrant == 1){
@@ -259,7 +297,7 @@ void renderScanline(PPU* ppu){
       attributeTableByte = attributeTableByte >> 6;
     }
 
-
+    // fetch palette using attributetable 
     tempPalette[0] = readPpuBus(ppu, 0x3f00 + 0 + (attributeTableByte * 4));
     tempPalette[1] = readPpuBus(ppu, 0x3f00 + 1 + (attributeTableByte * 4));
     tempPalette[2] = readPpuBus(ppu, 0x3f00 + 2 + (attributeTableByte * 4));
@@ -284,14 +322,38 @@ void renderScanline(PPU* ppu){
     thirtytwobitPixelColour = ppu->palette[tempPalette[bitsCombined]];
     ppu->scanlineBuffer[i] = thirtytwobitPixelColour;
     
+    // now iterate through the amount of sprites that were found at the beginning of the scanline and display them
+    for(int j = 0; j < spriteEvalCounter; ++j){
+
+      // + 3 because this gets the X coordinate of the tile
+      if(ppu->oam[oamIndices[j] + 3] <= i && ppu->oam[oamIndices[j] + 3] + 8 >= i){
+      // if the beam is within the boundaries of foreground tile, draw the pixel
+        
+        // oamIndices[j] + 1 because this is where the patterntable index resides in
+        bitPlane1 = readPpuBus(ppu, (spriteOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + (ppu->scanLine % 8)));
+        bitPlane2 = readPpuBus(ppu, (spriteOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + (ppu->scanLine % 8) + 8));        
+        bit1 = getBitFromLeft(bitPlane1, i % 8);
+        bit2 = getBitFromLeft(bitPlane2, i % 8);
+        bit1 = bit1 >> findBit(bit1);
+        bit2 = bit2 >> findBit(bit2);
+        bit2 = bit2 << 1;
+        bitsCombined = bit1 | bit2;
+
+        // if the colour isn't a transparency pixel, draw the pixel
+        if(bitsCombined != 0){
+          ppu->scanlineBuffer[i] = ppu->palette[tempPalette[bitsCombined]];
+        }
+      
+
+    }
 
   }
   
+  }
   
   
  
 }
-
 
 
 // allocateFrameBufffer()
