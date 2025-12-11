@@ -324,7 +324,7 @@ void renderScanline(PPU* ppu){
     bit2 = bit2 << 1;
     bitsCombined = bit1 | bit2;
     thirtytwobitPixelColour = ppu->palette[tempPalette[bitsCombined]];
-    ppu->scanlineBuffer[i] = thirtytwobitPixelColour;
+    ppu->frameBuffer[ppu->scanLine][i] = thirtytwobitPixelColour;
     
     // now iterate through the amount of sprites that were found at the beginning of the scanline and display them
     for(int j = 0; j < spriteEvalCounter; ++j){
@@ -336,10 +336,22 @@ void renderScanline(PPU* ppu){
         // oamIndices[j] + 1 because this is where the patterntable index resides in
         bitPlane1 = readPpuBus(ppu, (spriteOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + ppu->scanLine - ppu->oam[oamIndices[j]]));
         bitPlane2 = readPpuBus(ppu, (spriteOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + ppu->scanLine - ppu->oam[oamIndices[j]] + 8));        
-        bit1 = getBitFromLeft(bitPlane1, i - ppu->oam[oamIndices[j] + 3]);
-        bit2 = getBitFromLeft(bitPlane2, i - ppu->oam[oamIndices[j] + 3]);
-        bit1 = bit1 >> findBit(bit1);
-        bit2 = bit2 >> findBit(bit2);
+
+        // checks to see if the sprite horizontal mirroring bit is set
+        if(getBit(ppu->oam[oamIndices[j] + 2], 6) == 0b01000000){
+          bit1 = getBit(bitPlane1, i - ppu->oam[oamIndices[j] + 3]);
+          bit2 = getBit(bitPlane2, i - ppu->oam[oamIndices[j] + 3]);
+          bit1 = bit1 >> (i - ppu->oam[oamIndices[j] + 3]);
+          bit2 = bit2 >> (i - ppu->oam[oamIndices[j] + 3]);
+        } else {
+          bit1 = getBitFromLeft(bitPlane1, i - ppu->oam[oamIndices[j] + 3]);
+          bit2 = getBitFromLeft(bitPlane2, i - ppu->oam[oamIndices[j] + 3]);
+          bit1 = bit1 >> findBit(bit1);
+          bit2 = bit2 >> findBit(bit2);
+        }
+
+
+
         bit2 = bit2 << 1;
         bitsCombined = bit1 | bit2;
 
@@ -356,7 +368,7 @@ void renderScanline(PPU* ppu){
           tempPalette[3] = readPpuBus(ppu, 0x3f10 + 3 + (spritePaletteIndex * 4));
 
 
-          ppu->scanlineBuffer[i] = ppu->palette[tempPalette[bitsCombined]];
+          ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
         }
       
 
@@ -420,20 +432,6 @@ void vblankEnd(Bus* bus){
 
 
 
-// appendScanline()
-//   appends the scanline buffer to the framebuffer 
-//   inputs:
-//     ppu - ppu to render a scanline with 
-//
-void appendScanline(PPU* ppu){
-
-  // segfault on ppu->scanLine = 240 occurs here
-  for(int i = 0; i < WINDOW_WIDTH; ++i){
-    ppu->frameBuffer[ppu->scanLine][i] = ppu->scanlineBuffer[i];
-  }
-
- 
-}
 
 
 // getAttributeQuadrant()
