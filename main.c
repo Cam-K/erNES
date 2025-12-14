@@ -527,10 +527,11 @@ void startNes(char* romPath, int screenScaling){
             bus.ppu->scanLine++;
             //printf("Scanline %d \n", bus.ppu->scanLine);
             if(bus.ppu->scanLine == 240){
+              // Mirroring hack because bus.ppu->mirroring gets set with 0 despite us setting it to 1 for some reason
               bus.ppu->mirroring = mirroring;
               vblankStart(&bus);
               drawFrameBuffer(bus.ppu, renderer, texture);
-              printNameTable(&bus);
+              //printNameTable(&bus);
             } else if(bus.ppu->scanLine == 260){
               //printf("Frame %d \n", bus.ppu->frames);
               vblankEnd(&bus);

@@ -187,12 +187,12 @@ void printNameTable(Bus* bus){
   for(int i = 0; i < 0x1f; ++i){
     printf("%x ", i);
     for(int j = 0; j < 0x20; ++j){
-      if(readPpuBus(bus->ppu, 0x2c00 + j + (32 * i)) == 0x62){
+      if(readPpuBus(bus->ppu, 0x2400 + j + (32 * i)) == 0x62){
          red(); 
-      } else if(readPpuBus(bus->ppu, 0x2c00 + j + (32 * i)) != 0x24){
+      } else if(readPpuBus(bus->ppu, 0x2400 + j + (32 * i)) != 0x24){
         yellow();
       }
-      printf("%x ", readPpuBus(bus->ppu, 0x2c00 + j + (32 * i)));
+      printf("%x ", readPpuBus(bus->ppu, 0x2400 + j + (32 * i)));
       default_color(); 
     }
     printf("\n");
@@ -233,6 +233,7 @@ void renderScanline(PPU* ppu){
   int pixelY;
   uint8_t tempPalette[4];
   uint16_t oamIndices[8];
+  uint16_t baseNametableAddress;
 
 
   tempPalette[0] = 0x0f;
@@ -272,11 +273,26 @@ void renderScanline(PPU* ppu){
 
   }
     
+  if((ppu->ctrl & 0b11) == 0b00){
+    baseNametableAddress = 0x2000;
+
+  } else if ((ppu->ctrl & 0b11) == 0b01){
+    baseNametableAddress = 0x2400;
+
+
+  } else if ((ppu->ctrl & 0b11) == 0b10){
+    baseNametableAddress = 0x2800;
+
+  } else if ((ppu->ctrl & 0b11) == 0b11){
+    baseNametableAddress = 0x2c00;
+
+  }
+  
 
  
   for(int i = 0; i < WINDOW_WIDTH; ++i){
     // fetch nametable entry
-    patternTableIndice = readPpuBus(ppu, (0x2000 + (uint16_t)(i / 8)) + ((int)(ppu->scanLine / 8) * 32));
+    patternTableIndice = readPpuBus(ppu, (baseNametableAddress + (uint16_t)(i / 8)) + ((int)(ppu->scanLine / 8) * 32));
     
     ppu->vregister2 = (uint16_t)(i / 8) + ((int)(ppu->scanLine / 8) * 32);
 

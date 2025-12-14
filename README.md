@@ -11,5 +11,13 @@ Only compatible with mapper 0 games at the moment.
 ## Liberies Needed:
 ``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0``
 
+## How to run
+### To print help:
+``./nesemu -h``
+
+### To run a game:
+``./nesemu -n [FILE]
+
+
 
 

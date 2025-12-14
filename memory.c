@@ -166,7 +166,6 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         }
         break;
       case 0x2006:
-        //printf("Writing to bus at $2006 with %x \n", val);
 
          if(bus->ppu->wregister == 0){
           bus->ppu->vregister1 = (((uint16_t)val) << 8);
