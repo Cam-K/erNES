@@ -394,12 +394,9 @@ void renderScanline(PPU* ppu){
             tempPalette[3] = readPpuBus(ppu, 0x3f10 + 3 + (spritePaletteIndex * 4));
 
             // sprite zero hit
-            if(bitsCombined != 0 && ppu->frameBuffer[ppu->scanLine][i] != 0){
+            if(oamIndices[j] == 0 && ppu->frameBuffer[ppu->scanLine][i] != 0){
               ppu->status = setBit(ppu->status, 6);
-            } else {
-              ppu->status = clearBit(ppu->status, 6);
-        
-            }
+            } 
 
             ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
           }
@@ -460,6 +457,7 @@ void vblankEnd(Bus* bus){
   bus->ppu->scanLine = 0;
   bus->ppu->frames++;
 
+  bus->ppu->status = clearBit(bus->ppu->status, 6);
 
 }
 

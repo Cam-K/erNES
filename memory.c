@@ -401,6 +401,20 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
     return ppu->vram[addr - 0x3000];
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
     return ppu->paletteram[addr - 0x3f00];
+  } else if(addr >= 0x3f20 && addr <= 0x3f3f){
+    return ppu->paletteram[addr - 0x3f20];
+  } else if(addr >= 0x3f40 && addr <= 0x3f5f){
+    return ppu->paletteram[addr - 0x3f40];
+  } else if(addr >= 0x3f60 && addr <= 0x3f7f){
+    return ppu->paletteram[addr - 0x3f60];
+  } else if(addr >= 0x3f80 && addr <= 0x3f9f){
+    return ppu->paletteram[addr - 0x3f80];
+  } else if(addr >= 0x3fa0 && addr <= 0x3fBf){
+    return ppu->paletteram[addr - 0x3fa0];
+  } else if(addr >= 0x3fc0 && addr <= 0x3fdf){
+    return ppu->paletteram[addr - 0x3fc0];
+  } else if(addr >= 0x3fe0 && addr <= 0x3fff){
+    return ppu->paletteram[addr - 0x3fe0];
   } 
 
 }
@@ -445,6 +459,20 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
     ppu->vram[addr - 0x3000] = val;
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
     ppu->paletteram[addr - 0x3f00] = val;
+  } else if(addr >= 0x3f20 && addr <= 0x3f3f){
+    ppu->paletteram[addr - 0x3f20] = val;
+  } else if(addr >= 0x3f40 && addr <= 0x3f5f){
+    ppu->paletteram[addr - 0x3f40] = val;
+  } else if(addr >= 0x3f60 && addr <= 0x3f7f){
+    ppu->paletteram[addr - 0x3f60] = val;
+  } else if(addr >= 0x3f80 && addr <= 0x3f9f){
+    ppu->paletteram[addr - 0x3f80] = val;
+  } else if(addr >= 0x3fa0 && addr <= 0x3fBf){
+    ppu->paletteram[addr - 0x3fa0] = val;
+  } else if(addr >= 0x3fc0 && addr <= 0x3fdf){
+    ppu->paletteram[addr - 0x3fc0] = val;
+  } else if(addr >= 0x3fe0 && addr <= 0x3fff){
+    ppu->paletteram[addr - 0x3fe0] = val;
   } 
 
 
