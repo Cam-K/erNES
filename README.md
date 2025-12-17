@@ -4,11 +4,11 @@ A simple NES emulator, written in C and SDL2
 Only compatible with mapper 0 games at the moment.
 
 
-## How to compile:
+## How to compile on Linux system:
 ``make`` 
 
 
-## Liberies Needed:
+## Libraries Needed (Ubuntu):
 ``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0``
 
 ## How to run
@@ -16,7 +16,7 @@ Only compatible with mapper 0 games at the moment.
 ``./nesemu -h``
 
 ### To run a game:
-``./nesemu -n [FILE]
+``./nesemu -n [FILE]``
 
 
 ## Controls:

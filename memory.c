@@ -458,20 +458,247 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
   } else if (addr >= 0x3000 && addr <= 0x3eff){
     ppu->vram[addr - 0x3000] = val;
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
+
+    // palette mirroring
+    switch(addr){
+      case 0x3f00:
+        ppu->paletteram[(addr - 0x3f00) + 0x10] = val;
+        break;
+      case 0x3f10:
+        ppu->paletteram[(addr - 0x3f00) - 0x10] = val;
+        break;
+      case 0x3f04:
+        ppu->paletteram[(addr - 0x3f00) + 0x10] = val;
+        break;
+      case 0x3f14:
+        ppu->paletteram[(addr - 0x3f00) - 0x10] = val;
+        break;
+      case 0x3f08:
+        ppu->paletteram[(addr - 0x3f00) + 0x10] = val;
+        break;
+      case 0x3f18:
+        ppu->paletteram[(addr - 0x3f00) - 0x10] = val;
+        break;
+      case 0x3f0c:
+        ppu->paletteram[(addr - 0x3f00) + 0x10] = val;
+        break;
+      case 0x3f1c:
+        ppu->paletteram[(addr - 0x3f00) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
+  
     ppu->paletteram[addr - 0x3f00] = val;
   } else if(addr >= 0x3f20 && addr <= 0x3f3f){
+    switch(addr){
+      case 0x3f20:
+        ppu->paletteram[(addr - 0x3f20) + 0x10] = val;
+        break;
+      case 0x3f30:
+        ppu->paletteram[(addr - 0x3f20) - 0x10] = val;
+        break;
+      case 0x3f24:
+        ppu->paletteram[(addr - 0x3f20) + 0x10] = val;
+        break;
+      case 0x3f34:
+        ppu->paletteram[(addr - 0x3f20) - 0x10] = val;
+        break;
+      case 0x3f28:
+        ppu->paletteram[(addr - 0x3f20) + 0x10] = val;
+        break;
+      case 0x3f38:
+        ppu->paletteram[(addr - 0x3f20) - 0x10] = val;
+        break;
+      case 0x3f2c:
+        ppu->paletteram[(addr - 0x3f20) + 0x10] = val;
+        break;
+      case 0x3f3c:
+        ppu->paletteram[(addr - 0x3f20) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3f20] = val;
   } else if(addr >= 0x3f40 && addr <= 0x3f5f){
+    switch(addr){
+      case 0x3f40:
+        ppu->paletteram[(addr - 0x3f40) + 0x10] = val;
+        break;
+      case 0x3f50:
+        ppu->paletteram[(addr - 0x3f40) - 0x10] = val;
+        break;
+      case 0x3f44:
+        ppu->paletteram[(addr - 0x3f40) + 0x10] = val;
+        break;
+      case 0x3f54:
+        ppu->paletteram[(addr - 0x3f40) - 0x10] = val;
+        break;
+      case 0x3f48:
+        ppu->paletteram[(addr - 0x3f40) + 0x10] = val;
+        break;
+      case 0x3f58:
+        ppu->paletteram[(addr - 0x3f40) - 0x10] = val;
+        break;
+      case 0x3f4c:
+        ppu->paletteram[(addr - 0x3f40) + 0x10] = val;
+        break;
+      case 0x3f5c:
+        ppu->paletteram[(addr - 0x3f40) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3f40] = val;
   } else if(addr >= 0x3f60 && addr <= 0x3f7f){
+    switch(addr){
+      case 0x3f60:
+        ppu->paletteram[(addr - 0x3f60) + 0x10] = val;
+        break;
+      case 0x3f70:
+        ppu->paletteram[(addr - 0x3f60) - 0x10] = val;
+        break;
+      case 0x3f64:
+        ppu->paletteram[(addr - 0x3f60) + 0x10] = val;
+        break;
+      case 0x3f74:
+        ppu->paletteram[(addr - 0x3f60) - 0x10] = val;
+        break;
+      case 0x3f68:
+        ppu->paletteram[(addr - 0x3f60) + 0x10] = val;
+        break;
+      case 0x3f78:
+        ppu->paletteram[(addr - 0x3f60) - 0x10] = val;
+        break;
+      case 0x3f6c:
+        ppu->paletteram[(addr - 0x3f60) + 0x10] = val;
+        break;
+      case 0x3f7c:
+        ppu->paletteram[(addr - 0x3f60) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3f60] = val;
   } else if(addr >= 0x3f80 && addr <= 0x3f9f){
+    switch(addr){
+      case 0x3f80:
+        ppu->paletteram[(addr - 0x3f80) + 0x10] = val;
+        break;
+      case 0x3f90:
+        ppu->paletteram[(addr - 0x3f80) - 0x10] = val;
+        break;
+      case 0x3f84:
+        ppu->paletteram[(addr - 0x3f80) + 0x10] = val;
+        break;
+      case 0x3f94:
+        ppu->paletteram[(addr - 0x3f80) - 0x10] = val;
+        break;
+      case 0x3f88:
+        ppu->paletteram[(addr - 0x3f80) + 0x10] = val;
+        break;
+      case 0x3f98:
+        ppu->paletteram[(addr - 0x3f80) - 0x10] = val;
+        break;
+      case 0x3f8c:
+        ppu->paletteram[(addr - 0x3f80) + 0x10] = val;
+        break;
+      case 0x3f9c:
+        ppu->paletteram[(addr - 0x3f80) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3f80] = val;
-  } else if(addr >= 0x3fa0 && addr <= 0x3fBf){
+  } else if(addr >= 0x3fa0 && addr <= 0x3fbf){
+    switch(addr){
+      case 0x3fa0:
+        ppu->paletteram[(addr - 0x3fa0) + 0x10] = val;
+        break;
+      case 0x3fb0:
+        ppu->paletteram[(addr - 0x3fa0) - 0x10] = val;
+        break;
+      case 0x3fa4:
+        ppu->paletteram[(addr - 0x3fa0) + 0x10] = val;
+        break;
+      case 0x3fb4:
+        ppu->paletteram[(addr - 0x3fa0) - 0x10] = val;
+        break;
+      case 0x3fa8:
+        ppu->paletteram[(addr - 0x3fa0) + 0x10] = val;
+        break;
+      case 0x3fb8:
+        ppu->paletteram[(addr - 0x3fa0) - 0x10] = val;
+        break;
+      case 0x3fac:
+        ppu->paletteram[(addr - 0x3fa0) + 0x10] = val;
+        break;
+      case 0x3fbc:
+        ppu->paletteram[(addr - 0x3fa0) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3fa0] = val;
   } else if(addr >= 0x3fc0 && addr <= 0x3fdf){
+    switch(addr){
+      case 0x3fc0:
+        ppu->paletteram[(addr - 0x3fc0) + 0x10] = val;
+        break;
+      case 0x3fd0:
+        ppu->paletteram[(addr - 0x3fc0) - 0x10] = val;
+        break;
+      case 0x3fc4:
+        ppu->paletteram[(addr - 0x3fc0) + 0x10] = val;
+        break;
+      case 0x3fd4:
+        ppu->paletteram[(addr - 0x3fc0) - 0x10] = val;
+        break;
+      case 0x3fc8:
+        ppu->paletteram[(addr - 0x3fc0) + 0x10] = val;
+        break;
+      case 0x3fd8:
+        ppu->paletteram[(addr - 0x3fc0) - 0x10] = val;
+        break;
+      case 0x3fcc:
+        ppu->paletteram[(addr - 0x3fc0) + 0x10] = val;
+        break;
+      case 0x3fdc:
+        ppu->paletteram[(addr - 0x3fc0) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3fc0] = val;
   } else if(addr >= 0x3fe0 && addr <= 0x3fff){
+    switch(addr){
+      case 0x3fe0:
+        ppu->paletteram[(addr - 0x3fe0) + 0x10] = val;
+        break;
+      case 0x3ff0:
+        ppu->paletteram[(addr - 0x3fe0) - 0x10] = val;
+        break;
+      case 0x3fe4:
+        ppu->paletteram[(addr - 0x3fe0) + 0x10] = val;
+        break;
+      case 0x3ff4:
+        ppu->paletteram[(addr - 0x3fe0) - 0x10] = val;
+        break;
+      case 0x3fe8:
+        ppu->paletteram[(addr - 0x3fe0) + 0x10] = val;
+        break;
+      case 0x3ff8:
+        ppu->paletteram[(addr - 0x3fe0) - 0x10] = val;
+        break;
+      case 0x3fec:
+        ppu->paletteram[(addr - 0x3fe0) + 0x10] = val;
+        break;
+      case 0x3ffc:
+        ppu->paletteram[(addr - 0x3fe0) - 0x10] = val;
+        break;
+      default:
+        break;
+    }
     ppu->paletteram[addr - 0x3fe0] = val;
   } 
 

@@ -452,12 +452,17 @@ void vblankStart(Bus* bus){
 void vblankEnd(Bus* bus){
   //printf("vblank end! \n");
 
+  // clears vblank flag
   bus->ppu->status = clearBit(bus->ppu->status, 7);
   bus->ppu->vblank = 0;
-  bus->ppu->scanLine = 0;
+  bus->ppu->scanLine++;
   bus->ppu->frames++;
 
+  bus->ppu->scanLine = 0;
+
+  // clears sprite 0 flag
   bus->ppu->status = clearBit(bus->ppu->status, 6);
+  
 
 }
 

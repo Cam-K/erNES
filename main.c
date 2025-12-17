@@ -535,8 +535,8 @@ void startNes(char* romPath, int screenScaling){
             } else if(bus.ppu->scanLine == 260){
               //printf("Frame %d \n", bus.ppu->frames);
               vblankEnd(&bus);
-
-            }
+  
+            } 
 
         }
         while (SDL_PollEvent(&event)) {
@@ -966,7 +966,6 @@ void freeAndExit(Bus* bus){
 
   printf("Freeing memory and exiting... \n");
 
-  free(bus->ppu->scanlineBuffer);
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
 
     free(bus->ppu->frameBuffer[i]);
