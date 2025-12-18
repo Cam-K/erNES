@@ -221,7 +221,8 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
     oamIndices[i] = 0;
   }
   
-  for(uint8_t i = 0; i <= 255; i = i + 4){
+  printf("start \n");
+  for(uint16_t i = 0; i < 256; i = i + 4){
 
     // ppu->oam[i] gets the Y coordinate of the tile
     if(eightSixteenSpriteFlag == 0){
@@ -240,6 +241,7 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
     }
 
   }
+  printf("end \n ");
   printf("finished sprite evaluation with %d counter \n", spriteEvalCounter);
   return spriteEvalCounter;
 
