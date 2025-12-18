@@ -212,12 +212,13 @@ int getEightSixteen(PPU* ppu){
 
 }
 
+
+// spriteEvaluation()
+//    performs a sprite evaluation on the PPU's OAM
+
 int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
   int spriteEvalCounter = 0;
-  for(int i = 0; i < 8; ++i){
 
-    oamIndices[i] = 0;
-  }
 
   for(uint16_t i = 0; i < 256; i = i + 4){
 
@@ -314,15 +315,15 @@ void renderScanline(PPU* ppu){
   // Sprite Evaluation
   //   Does a linear search through the oam, find 8 sprites on the current scanline that are going to be drawn and
   //   stores the oam indices into an array
-
   spriteEvalCounter = spriteEvaluation(ppu, oamIndices, eightSixteenSpriteFlag);
+
 
   for(int i = 0; i < WINDOW_WIDTH; ++i){
 
     //First, draw background
 
     // fetch nametable entry
-    patternTableIndice = readPpuBus(ppu, (uint16_t)(baseNametableAddress + (uint16_t)(i / 8)) + ((uint16_t)(ppu->scanLine / 8) * 32) + (uint16_t)(ppu->xScroll / 8) + (uint16_t)(ppu->yScroll / 8) * 32);
+    patternTableIndice = readPpuBus(ppu, (uint16_t)(baseNametableAddress + (uint16_t)(i / 8)) + ((uint16_t)(ppu->scanLine / 8) * 32));
     
     ppu->vregister2 = (uint16_t)(i / 8) + ((int)(ppu->scanLine / 8) * 32);
 
@@ -411,23 +412,23 @@ void renderScanline(PPU* ppu){
           // if the sprite is vertically mirrored or not
           if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0){ 
             
-            // oamIndices[j] + 1 because this is where the patterntable index resides in
+            
             if((ppu->scanLine - ppu->oam[oamIndices[j]]) <= 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) << 4) + ppu->scanLine - ppu->oam[oamIndices[j]]));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) << 4) + (ppu->scanLine - ppu->oam[oamIndices[j]]) + 8));    
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + ppu->scanLine - ppu->oam[oamIndices[j]]));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (ppu->scanLine - ppu->oam[oamIndices[j]]) + 8));    
             } else if((ppu->scanLine - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) + 1) << 4) + ppu->scanLine - ppu->oam[oamIndices[j]]));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) + 1) << 4) + (ppu->scanLine - ppu->oam[oamIndices[j]]) + 8));    
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (ppu->scanLine - ppu->oam[oamIndices[j]]) - 8));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (ppu->scanLine - ppu->oam[oamIndices[j]])));    
             }
 
           } else if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0b10000000) {
 
             if((ppu->scanLine - ppu->oam[oamIndices[j]]) <= 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8)));    
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8)));      
             } else if((ppu->scanLine - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 1) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8)));    
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] - 8)));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));    
             }
 
           }
