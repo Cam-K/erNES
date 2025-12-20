@@ -174,6 +174,8 @@ int main(int argc, char* argv[]){
           
       }
     } 
+  } else {
+    printHelp();
   }
   
   if(hFlag == 1){

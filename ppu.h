@@ -68,7 +68,7 @@ typedef struct _PPU {
   // used to hold the ppu address 
   uint16_t vregister1;
   
-  // holds the currently drawn nametable address
+  // holds the currently drawn nametable address offset
   uint16_t vregister2;
 
 
@@ -114,7 +114,9 @@ void dmaTransfer(Bus*);
 
 void renderScanlineForeground(PPU*);
 
+int spriteEvaluation(PPU*, uint8_t*, int);
 
+int getEightSixteen(PPU*);
 
 // draws the completed framebuffer to screen in SDL
 void drawFrameBuffer(PPU*, SDL_Renderer*, SDL_Texture*);

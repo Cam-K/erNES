@@ -215,7 +215,13 @@ int getEightSixteen(PPU* ppu){
 
 // spriteEvaluation()
 //    performs a sprite evaluation on the PPU's OAM
-
+// input:
+//   ppu - ppu to function on
+//   eightSixteenSpriteFlag - whether the game is an 8x8 or 8x16 sprite game
+// output:
+//   oamIndices - output array
+// return:
+//   amount of sprites found on the current scanline
 int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
   int spriteEvalCounter = 0;
 
@@ -223,6 +229,7 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
   for(uint16_t i = 0; i < 256; i = i + 4){
 
     // ppu->oam[i] gets the Y coordinate of the tile
+    
     if(eightSixteenSpriteFlag == 0){
       if(ppu->oam[i] <= ppu->scanLine && ppu->oam[i] + 7 >= ppu->scanLine){
         oamIndices[spriteEvalCounter] = (uint8_t) i;
@@ -234,7 +241,16 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
         spriteEvalCounter++;
       }
     }
-    if(spriteEvalCounter >= 8){
+
+    if(spriteEvalCounter >= 7){
+      if(spriteEvalCounter == 7){
+        continue;
+      }
+
+      if(spriteEvalCounter >= 8){
+        ppu->status = setBit(ppu->status, 5);
+        spriteEvalCounter = 7;
+      }
       break;
     }
 
@@ -314,7 +330,7 @@ void renderScanline(PPU* ppu){
 
   // Sprite Evaluation
   //   Does a linear search through the oam, find 8 sprites on the current scanline that are going to be drawn and
-  //   stores the oam indices into an array
+  //   stores the found oam indices into an array
   spriteEvalCounter = spriteEvaluation(ppu, oamIndices, eightSixteenSpriteFlag);
 
 
@@ -326,6 +342,7 @@ void renderScanline(PPU* ppu){
     patternTableIndice = readPpuBus(ppu, (uint16_t)(baseNametableAddress + (uint16_t)(i / 8)) + ((uint16_t)(ppu->scanLine / 8) * 32));
     
     ppu->vregister2 = (uint16_t)(i / 8) + ((int)(ppu->scanLine / 8) * 32);
+
 
 
 
@@ -476,10 +493,7 @@ void renderScanline(PPU* ppu){
             ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
           }
         }
-      
-
     }
-
   }
   
   }
@@ -537,6 +551,9 @@ void vblankEnd(Bus* bus){
 
   // clears sprite 0 flag
   bus->ppu->status = clearBit(bus->ppu->status, 6);
+
+  // clears sprite overflow flag
+  bus->ppu->status = clearBit(bus->ppu->status, 5);
   
 
 }
