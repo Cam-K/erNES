@@ -8,6 +8,8 @@
 #include "ansicolor.h"
 
 
+// initPpu()
+//   initializes PPU
 void initPpu(PPU* ppu){
 
   ppu->chrrom = malloc(sizeof(uint8_t) * 8192);
@@ -82,8 +84,10 @@ void dmaTransfer(Bus* bus){
   }
   //printf("\n");
 }
+
 // populatePalette()
 //   hard-coding 24-bit rgb values for each of the nes' 64 colours
+//   table for nes to 24bit color conversion
 void populatePalette(PPU* ppu){
   ppu->palette[0] = 0x7C7C7C;
   ppu->palette[1] = 0x0000FC;
@@ -155,8 +159,9 @@ void populatePalette(PPU* ppu){
 }
 
 
-// draws Framebuffer to background layer in sdl 
-// also converts the nes colour palette to rgb values when reading from the frame buffer
+// drawFramebuffer()
+//   draws Framebuffer to background layer in sdl 
+//   also converts the nes colour palette to rgb values when reading from the frame buffer
 void drawFrameBuffer(PPU* ppu, SDL_Renderer* renderer, SDL_Texture* texture){
   //printf("drawing framebuffer \n");
   uint32_t *pixels;
@@ -219,7 +224,7 @@ int getEightSixteen(PPU* ppu){
 //   ppu - ppu to function on
 //   eightSixteenSpriteFlag - whether the game is an 8x8 or 8x16 sprite game
 // output:
-//   oamIndices - output array
+//   oamIndices - output array of oam indices
 // return:
 //   amount of sprites found on the current scanline
 int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
