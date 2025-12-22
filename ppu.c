@@ -352,6 +352,9 @@ void renderScanline(PPU* ppu){
 
 
   //printf("fineX %x \n", fineX);
+  //printf("treg courseX : %x \n", ppu->tregister.courseX);
+  //printf("treg courseY : %x \n", ppu->tregister.courseY);
+  printf("nametable select: %x \n", ppu->tregister.nameTableSelect);
 
   for(int i = 0; i < WINDOW_WIDTH; ++i){
 
@@ -596,10 +599,19 @@ void vblankEnd(Bus* bus){
 
   // clears sprite overflow flag
   bus->ppu->status = clearBit(bus->ppu->status, 5);
-  bus->ppu->vregister2.courseY = bus->ppu->tregister.courseY;
-  bus->ppu->vregister2.fineY = 0;
+
+  // copy all x components from t to v
+  bus->ppu->vregister2.courseX = bus->ppu->tregister.courseX;
+  bus->ppu->vregister2.nameTableSelect = (bus->ppu->tregister.nameTableSelect & 0b1);
   bus->ppu->xregister = 0;
   
+
+  // copy all y components from t to v
+
+  bus->ppu->vregister2.courseY = bus->ppu->tregister.courseY;
+  bus->ppu->vregister2.fineY = bus->ppu->tregister.fineY;
+  bus->ppu->vregister2.nameTableSelect = bus->ppu->vregister2.nameTableSelect | (bus->ppu->tregister.nameTableSelect & 0b10);
+
 }
 
 

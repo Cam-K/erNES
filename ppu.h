@@ -72,6 +72,8 @@ typedef struct _PPU {
   // this register is used when demultiplexing PPUSCROLL and PPUADDR
   int wregister; 
   
+
+  // NOTE: The following registers require an understanding of https://www.nesdev.org/wiki/PPU_scrolling
   // used to hold the ppu addres
   uint16_t vregister1;
   
