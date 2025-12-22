@@ -72,14 +72,18 @@ typedef struct _PPU {
   // this register is used when demultiplexing PPUSCROLL and PPUADDR
   int wregister; 
   
-  // used to hold the ppu address 
+  // used to hold the ppu addres
   uint16_t vregister1;
   
-  // holds the currently drawn nametable address offset
 
+  // fineX scroll component
   uint8_t xregister;
   
+
+  // temporary nametable address (offset of top left nametable address)
   struct VComponent tregister;
+
+  // currently drawn nametable address
   struct VComponent vregister2;
 
 

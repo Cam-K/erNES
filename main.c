@@ -542,16 +542,7 @@ void startNes(char* romPath, int screenScaling){
               //printf("Frame %d \n", bus.ppu->frames);
               vblankEnd(&bus);
 
-              vcomp.courseX = (uint8_t)(bus.ppu->xScroll & 0xf8) >> 3;
-              vcomp.courseY = (uint8_t)(bus.ppu->yScroll & 0xf8) >> 3;
-              vcomp.fineY = bus.ppu->yScroll & 0b111;
-              fineX = bus.ppu->xScroll & 0b111;
-              vcomp.nameTableSelect = bus.ppu->ctrl & 0b11;
-              bus.ppu->vregister2 = bus.ppu->vregister2 | ((uint16_t)vcomp.courseX);
-              bus.ppu->vregister2 = bus.ppu->vregister2 | (((uint32_t)vcomp.courseY) << 5);
-              bus.ppu->vregister2 = bus.ppu->vregister2 | (((uint32_t)vcomp.nameTableSelect) << 10);
-              bus.ppu->vregister2 = bus.ppu->vregister2 | (((uint32_t)vcomp.fineY) << 12);
-    
+
             } 
 
         }

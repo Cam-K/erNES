@@ -4,7 +4,7 @@ A simple NES emulator, written in C and SDL2
 Only compatible with some mapper 0 games at the moment.
 
 
-## How to compile on Linux system:
+## How to compile on a Linux system:
 ``make`` 
 
 

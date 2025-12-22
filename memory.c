@@ -165,7 +165,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
           bus->ppu->wregister = 1;
         } else if(bus->ppu->wregister == 1){
           bus->ppu->vregister2.courseY = (val & 0xf8) >> 3;
-          bus->ppu->tregister.courseX = (val & 0xf8) >> 3;
+          bus->ppu->tregister.courseY = (val & 0xf8) >> 3;
           bus->ppu->vregister2.fineY = (val & 0x07);
           bus->ppu->tregister.fineY = (val & 0x07);
           bus->ppu->wregister = 0;
