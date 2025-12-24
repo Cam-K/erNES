@@ -10,7 +10,7 @@ Able to boot games such as Balloon Fight and Donkey Kong.
 
 
 ## Libraries Needed (Ubuntu):
-``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0``
+``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0-0``
 
 ## How to run
 ### To print help:

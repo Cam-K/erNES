@@ -210,11 +210,12 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
     return;
     
   }  else {
-
+    
     // NROM mapper (the basic bitch mapper)
     if(bus->mapper == 0){
       if(addr >= 0x8000 && addr <= 0xffff){
-        bus->memArr[1].contents[addr - 0x8000] = val;
+        return;
+        //bus->memArr[1].contents[addr - 0x8000] = val;
       }
       
     }

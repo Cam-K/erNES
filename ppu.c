@@ -324,21 +324,6 @@ void renderScanline(PPU* ppu){
       spriteOffset = 0x1000;
   }
 
-  if((ppu->ctrl & 0b11) == 0b00){
-    baseNametableAddress = 0x2000;
-
-  } else if ((ppu->ctrl & 0b11) == 0b01){
-    baseNametableAddress = 0x2400;
-
-
-  } else if ((ppu->ctrl & 0b11) == 0b10){
-    baseNametableAddress = 0x2800;
-
-  } else if ((ppu->ctrl & 0b11) == 0b11){
-    baseNametableAddress = 0x2c00;
-
-  }
-
   eightSixteenSpriteFlag = getEightSixteen(ppu);
 
 

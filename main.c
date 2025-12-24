@@ -486,15 +486,14 @@ void startNes(char* romPath, int screenScaling){
       populatePalette(bus.ppu);
       
 
-
       // loads prg-rom into memory
       if(numOfPrgRoms == 1){
         for(int i = 0; i < (16384 * numOfPrgRoms); ++i){
-          writeBus(&bus, i + 0xc000, fgetc(romPtr));
+          bus.memArr[1].contents[i + 0x4000] = fgetc(romPtr);
         }
       }else if(numOfPrgRoms == 2){
        for(int i = 0; i < (16384 * numOfPrgRoms); ++i){
-          writeBus(&bus, i + 0x8000, fgetc(romPtr));
+          bus.memArr[1].contents[i] = fgetc(romPtr);
         }
       }
       
