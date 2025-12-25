@@ -1,8 +1,10 @@
 # Nintendo Entertainment System Emulator
-A simple NES emulator, written in C and SDL2
+A simple NES emulator, written in C and SDL2.
 
 Only compatible with some mapper 0 games at the moment.
 Able to boot games such as Balloon Fight and Donkey Kong.
+
+Currently a work in progress.
 
 
 ## How to compile on a Linux system:

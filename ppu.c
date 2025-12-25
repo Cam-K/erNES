@@ -285,8 +285,12 @@ void renderScanline(PPU* ppu){
   int attributeTableQuandrant;
   uint8_t attributeTableByte;
   uint16_t patternTableIndice;
+  uint16_t patternTableIndice1;
+  uint16_t patternTableIndice2;
   uint8_t bitPlane1;
   uint8_t bitPlane2;
+  uint16_t bitPlane1_16;
+  uint16_t bitPlane2_16;
   uint8_t bit1;
   uint8_t bit2;
   uint8_t bitsCombined;
@@ -331,25 +335,12 @@ void renderScanline(PPU* ppu){
   spriteEvalCounter = spriteEvaluation(ppu, oamIndices, eightSixteenSpriteFlag);
 
 
-    
 
-
-  //printf("fineX %x \n", fineX);
-  //printf("treg courseX : %x \n", ppu->tregister.courseX);
-  //printf("treg courseY : %x \n", ppu->tregister.courseY);
-  //printf("nametable select: %x \n", ppu->tregister.nameTableSelect);
 
   for(int i = 0; i < WINDOW_WIDTH; ++i){
 
     // First, draw background
-
-    // fetch nametable entry
-    //printf("vr2 + bna %x \n", ppu->vregister2);
-    //printf("vcomp.courseX %x \n", vcomp.courseX);
-
-    //printf("vr2 %x \n", ppu->vregister2 + 0x2000);
     
-
     tempV2 = 0;
     tempV2 = ppu->vregister2.courseX;
     tempV2 = tempV2 | (((uint16_t)ppu->vregister2.courseY) << 5);
@@ -359,6 +350,7 @@ void renderScanline(PPU* ppu){
 
     
     patternTableIndice = readPpuBus(ppu, 0x2000 + tempV2);
+   
     
 
 
@@ -397,16 +389,16 @@ void renderScanline(PPU* ppu){
     // if ppuctrl bit 3 is 0, then use 0x0000 as base, 
     // else if ppuctrl bit 3 is 1 then use 0x1000 as base
     if(getBit(ppu->mask, 3) == 0b1000){
-    bitPlane1 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
-    bitPlane2 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
-    bit1 = getBitFromLeft(bitPlane1, (i % 8));
-    bit2 = getBitFromLeft(bitPlane2, (i % 8));
-    bit1 = bit1 >> findBit(bit1);
-    bit2 = bit2 >> findBit(bit2);
-    bit2 = bit2 << 1;
-    bitsCombined = bit1 | bit2;
-    thirtytwobitPixelColour = ppu->palette[tempPalette[bitsCombined]];
-    ppu->frameBuffer[ppu->scanLine][i] = thirtytwobitPixelColour;
+      bitPlane1 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
+      bitPlane2 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
+      bit1 = getBitFromLeft(bitPlane1, (i % 8));
+      bit2 = getBitFromLeft(bitPlane2, (i % 8));
+      bit1 = bit1 >> findBit(bit1);
+      bit2 = bit2 >> findBit(bit2);
+      bit2 = bit2 << 1;
+      bitsCombined = bit1 | bit2;
+      thirtytwobitPixelColour = ppu->palette[tempPalette[bitsCombined]];
+      ppu->frameBuffer[ppu->scanLine][i] = thirtytwobitPixelColour;
 
     // this is kept for later when checking for a sprite zero hit
     bitsCombinedBackground = bitsCombined;
@@ -420,7 +412,7 @@ void renderScanline(PPU* ppu){
       //printf("tempV2: %x \n", 0x2000 + tempV2);
       if(ppu->vregister2.courseX == 31){
         ppu->vregister2.courseX = 0;
-        ppu->vregister2.nameTableSelect = getBit(ppu->vregister2.nameTableSelect, 1) | setBit(ppu->vregister2.nameTableSelect, 0);
+        ppu->vregister2.nameTableSelect = getBit(ppu->vregister2.nameTableSelect, 1) | (getBit(ppu->vregister2.nameTableSelect, 0) ^ 0b01);
 
       } else {
         ppu->vregister2.courseX++;
@@ -524,6 +516,7 @@ void renderScanline(PPU* ppu){
             // sprite zero hit
             if(oamIndices[j] == 0 && bitsCombinedBackground != 0){
               ppu->status = setBit(ppu->status, 6);
+              printf("sprite zero hit \n");
             } 
 
             ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
@@ -590,6 +583,7 @@ void vblankStart(Bus* bus){
   
   bus->ppu->status = setBit(bus->ppu->status, 7);
   bus->ppu->vblank = 1;
+
   // checks vblank enable bit
   if(getBit(bus->ppu->ctrl, 7) == 0b10000000){
     nmi(bus->cpu, bus);
@@ -605,6 +599,7 @@ void vblankEnd(Bus* bus){
 
   // clears vblank flag
   bus->ppu->status = clearBit(bus->ppu->status, 7);
+
   bus->ppu->vblank = 0;
   bus->ppu->scanLine++;
   bus->ppu->frames++;

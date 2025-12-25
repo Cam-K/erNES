@@ -28,5 +28,8 @@ uint8_t findBit(uint8_t);
 uint8_t bitToBitNum(uint8_t);
 
 uint8_t shiftRightWithWrap(uint8_t, uint8_t);
-
 uint8_t shiftLeftWithWrap(uint8_t, uint8_t);
+
+uint16_t getBitFromLeft16bit(uint16_t, uint8_t);
+uint16_t clearBitFromLeft16bit(uint16_t, uint8_t);
+uint16_t setBitFromLeft16bit(uint16_t, uint8_t);

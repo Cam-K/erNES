@@ -48,6 +48,20 @@ uint8_t setBitFromLeft(uint8_t val, uint8_t bitNum){
   return val | (0b10000000 >> bitNum);
 }
 
+uint16_t getBitFromLeft16bit(uint16_t val, uint8_t bitNum){
+
+  return (val & 0b1000000000000000 >> bitNum);
+}
+
+
+uint16_t clearBitFromLeft16bit(uint16_t val, uint8_t bitNum){
+  return val & ~(0b1000000000000000 >> bitNum);
+}
+
+uint16_t setBitFromLeft16bit(uint16_t val, uint8_t bitNum){
+  return val | (0b1000000000000000 >> bitNum);
+}
+
 
 // finds the first instance of a 1-bit in a bitstring
 uint8_t findBit(uint8_t val){
