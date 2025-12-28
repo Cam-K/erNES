@@ -150,6 +150,7 @@ void drawFrameBuffer(PPU*, SDL_Renderer*, SDL_Texture*);
 
 
 void incrementCourseX(PPU*);
+void fetchFirstTwoTiles(PPU*, uint16_t);
 
 void fillTempV(uint16_t*, struct VComponent); 
 

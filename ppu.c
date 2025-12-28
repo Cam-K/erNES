@@ -420,7 +420,7 @@ void renderScanline(PPU* ppu){
       }
       // + 3 because this gets the X coordinate of the tile
       // if the beam is within the boundaries of foreground tile, draw the pixel
-      if(ppu->oam[oamIndices[j] + 3] <= i && ppu->oam[oamIndices[j] + 3] + 7 >= i){
+      if(ppu->oam[oamIndices[j] + 3] <= i && ppu->oam[oamIndices[j] + 3] + 8 >= i){
  
 
        if(eightSixteenSpriteFlag == 0){
@@ -510,6 +510,9 @@ void renderScanline(PPU* ppu){
             ppu->status = setBit(ppu->status, 6);
           }
         }
+
+        // sprite priority implementation
+        //   break if the the current pixel's sprite is not transparent, not drawing any further pixels ontop of it
         if(bitsCombined != 0){
           break;
 
@@ -520,7 +523,6 @@ void renderScanline(PPU* ppu){
   }
 
   // hori(v) = hori(t)
-  //printf("%x \n", ppu->tregister.courseX);
   ppu->vregister2.courseX = ppu->tregister.courseX;
   ppu->vregister2.nameTableSelect = getBit(ppu->vregister2.nameTableSelect, 1) | getBit(ppu->tregister.nameTableSelect, 0);
 
@@ -543,52 +545,8 @@ void renderScanline(PPU* ppu){
 
   }
 
+  fetchFirstTwoTiles(ppu, patternTableOffset);
 
-    fillTempV(&tempV2, ppu->vregister2);
-
-
-    // fetch nametable
-    patternTableIndice = readPpuBus(ppu, 0x2000 + tempV2);
-
-
-    // fetch attribute table byte 
-    attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
-    attributeTableByte = findAndReturnAttributeByte(0, ppu->scanLine + 1, attributeTableByte);
-
-
-    ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
-    ppu->attributeData = ppu->attributeData >> 2;
-
-
-    // fetch low and high bitplanes of patterntable
-    ppu->bitPlane1 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
-    ppu->bitPlane1 = ppu->bitPlane1 << 8;
-
-    ppu->bitPlane2 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
-    ppu->bitPlane2 = ppu->bitPlane2 << 8;
-
-    incrementCourseX(ppu);
-    fillTempV(&tempV2, ppu->vregister2);
-
-    // fetch pattern table ID
-    patternTableIndice = readPpuBus(ppu, 0x2000 + tempV2);
-
-    // fetch attribute table byte
-    attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
-    attributeTableByte = findAndReturnAttributeByte(1, ppu->scanLine + 1, attributeTableByte);
-
-    ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
-
-
-    // fetch low and high bitplanes of patterntable
-    ppu->bitPlane1 = ppu->bitPlane1 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
-    ppu->bitPlane2 = ppu->bitPlane2 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
-
-
-   
-    incrementCourseX(ppu);
-
- 
  
 }
 
@@ -638,6 +596,63 @@ void allocateNewFrameBuffer(PPU* ppu){
     ppu->frameBuffer[i] = malloc(sizeof(uint32_t) * WINDOW_WIDTH);
   } 
 
+}
+
+void fetchFirstTwoTiles(PPU* ppu, uint16_t patternTableOffset){
+
+  
+  uint16_t patternTableIndice;
+  uint16_t tempV2;
+  uint8_t attributeTableByte;
+
+  fillTempV(&tempV2, ppu->vregister2);
+  
+
+
+  // fetch nametable
+  patternTableIndice = readPpuBus(ppu, 0x2000 + tempV2);
+
+
+  // fetch attribute table byte 
+  attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
+  attributeTableByte = findAndReturnAttributeByte(0, ppu->scanLine + 1, attributeTableByte);
+
+
+  ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
+  ppu->attributeData = ppu->attributeData >> 2;
+
+
+
+    // fetch low and high bitplanes of patterntable
+  ppu->bitPlane1 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
+  ppu->bitPlane1 = ppu->bitPlane1 << 8;
+
+  ppu->bitPlane2 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
+  ppu->bitPlane2 = ppu->bitPlane2 << 8;
+
+  incrementCourseX(ppu);
+  fillTempV(&tempV2, ppu->vregister2);
+
+    // fetch pattern table ID
+  patternTableIndice = readPpuBus(ppu, 0x2000 + tempV2);
+
+    // fetch attribute table byte
+  attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
+  attributeTableByte = findAndReturnAttributeByte(1, ppu->scanLine + 1, attributeTableByte);
+    
+
+  ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
+
+    // fetch low and high bitplanes of patterntable
+  ppu->bitPlane1 = ppu->bitPlane1 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY));
+  ppu->bitPlane2 = ppu->bitPlane2 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister2.fineY + 8));
+
+
+   
+  incrementCourseX(ppu);
+
+ 
+
 
 }
 
@@ -662,6 +677,7 @@ void vblankEnd(Bus* bus){
   //printf("vblank end! \n");
 
   // clears vblank flag
+
   bus->ppu->status = clearBit(bus->ppu->status, 7);
 
   bus->ppu->vblank = 0;
@@ -676,16 +692,29 @@ void vblankEnd(Bus* bus){
   // clears sprite overflow flag
   bus->ppu->status = clearBit(bus->ppu->status, 5);
 
+  // hori(v) = hori(t)
   // copy all x components from t to v
   bus->ppu->vregister2.courseX = bus->ppu->tregister.courseX;
   bus->ppu->vregister2.nameTableSelect = (bus->ppu->tregister.nameTableSelect & 0b1);
   
 
+  // vert(v) = vert(t)
   // copy all y components from t to v
-
   bus->ppu->vregister2.courseY = bus->ppu->tregister.courseY;
   bus->ppu->vregister2.fineY = bus->ppu->tregister.fineY;
   bus->ppu->vregister2.nameTableSelect = getBit(bus->ppu->vregister2.nameTableSelect, 0) | getBit(bus->ppu->tregister.nameTableSelect, 1);
+
+
+  uint16_t patternTableOffset;
+  if(getBit(bus->ppu->ctrl, 4) == 0){
+    patternTableOffset = 0;
+  } else if (getBit(bus->ppu->ctrl, 4) != 0){
+    patternTableOffset = 0x1000;
+  }
+  
+  fetchFirstTwoTiles(bus->ppu, patternTableOffset);
+ 
+ 
 
 }
 
@@ -1267,21 +1296,22 @@ uint8_t findAndReturnAttributeByte(int x, int y, uint8_t attributeTableByte){
     } 
   }
 
+  uint8_t atb = attributeTableByte;
   if(quadrant == 0){
-      attributeTableByte = attributeTableByte & 0b11;
+      atb = atb & 0b11;
   } else if (quadrant == 1){
-    attributeTableByte = attributeTableByte & 0b1100;
-    attributeTableByte = attributeTableByte >> 2;
+    atb = atb & 0b1100;
+    atb = atb >> 2;
   } else if(quadrant == 2){
-    attributeTableByte = attributeTableByte & 0b110000;
-    attributeTableByte = attributeTableByte >> 4;
+    atb = atb & 0b110000;
+    atb = atb >> 4;
   } else if(quadrant == 3){
-    attributeTableByte = attributeTableByte & 0b11000000;
-    attributeTableByte = attributeTableByte >> 6;
+    atb = atb & 0b11000000;
+    atb = atb >> 6;
   }
 
 
-  return attributeTableByte;
+  return atb;
 
   
 }
