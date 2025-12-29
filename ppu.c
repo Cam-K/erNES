@@ -353,15 +353,11 @@ void renderScanline(PPU* ppu){
    
     
 
-
-    // fetch attributetable byte using formula
+    // every 16 pixels, fetch a new attributetable byte and push it into the shift register
     if(i % 16 == 0){
-    attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
-    attributeTableByte = findAndReturnAttributeByte(i, ppu->scanLine, attributeTableByte);
-    
-
-    // store recently fetched attribute data in buffer
-    ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
+      attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
+      attributeTableByte = findAndReturnAttributeByte(tempV2, attributeTableByte);
+      ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
 
     }
   
@@ -470,11 +466,11 @@ void renderScanline(PPU* ppu){
           } else if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0b10000000) {
 
             if((ppu->scanLine - ppu->oam[oamIndices[j]]) <= 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8)));      
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]]))));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8))));      
             } else if((ppu->scanLine - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]] - 8)));
-              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + 7 - (ppu->scanLine - ppu->oam[oamIndices[j]])));    
+              bitPlane1 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]] - 8))));
+              bitPlane2 = readPpuBus(ppu, (spriteOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]]))));    
             }
 
           }
@@ -514,14 +510,12 @@ void renderScanline(PPU* ppu){
             tempPalette[2] = readPpuBus(ppu, 0x3f10 + 2 + (spritePaletteIndex * 4));
             tempPalette[3] = readPpuBus(ppu, 0x3f10 + 3 + (spritePaletteIndex * 4));
 
-            // sprite zero hit
-
             ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
           }
 
 
-          // sprite zero hit
-          if(oamIndices[j] == 0 && bitsCombinedBackground != 0 && getBit(ppu->mask, 3) != 0 && bitsCombined != 0 && getBit(ppu->status, 6) == 0){
+          // sprite zero hit detection
+          if(oamIndices[j] == 0 && bitsCombinedBackground != 0 && getBit(ppu->mask, 3) != 0 && bitsCombined != 0 && getBit(ppu->status, 6) == 0 && i != 255){
             ppu->status = setBit(ppu->status, 6);
           }
         }
@@ -632,7 +626,7 @@ void fetchFirstTwoTiles(PPU* ppu, uint16_t patternTableOffset){
 
   // fetch attribute table byte 
   attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
-  attributeTableByte = findAndReturnAttributeByte(0, ppu->scanLine + 1, attributeTableByte);
+  attributeTableByte = findAndReturnAttributeByte(tempV2, attributeTableByte);
 
 
   ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
@@ -655,7 +649,7 @@ void fetchFirstTwoTiles(PPU* ppu, uint16_t patternTableOffset){
 
     // fetch attribute table byte
   attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV2 & 0x0c00) | ((tempV2 >> 4) & 0x38) | ((tempV2 >> 2) & 0x07));
-  attributeTableByte = findAndReturnAttributeByte(1, ppu->scanLine + 1, attributeTableByte);
+  attributeTableByte = findAndReturnAttributeByte(tempV2, attributeTableByte);
     
 
   ppu->attributeData = ppu->attributeData | (attributeTableByte << 2);
@@ -760,559 +754,33 @@ void vblankEnd(Bus* bus){
 
  */
 
-uint8_t findAndReturnAttributeByte(int x, int y, uint8_t attributeTableByte){
+uint8_t findAndReturnAttributeByte(uint16_t tempV2, uint8_t attributeTableByte){
 
   int quadrant;
-  
-  if(x <= 15){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 15 && x <= 31){
 
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 31 && x <= 47){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
+  uint8_t courseX = tempV2 & 0x1f;
+  uint8_t courseY = ((tempV2 & 0x3e0) >> 5);
 
-  } else if(x > 47 && x <= 63){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
+  if((courseX & 0b10) == 0){
+    if((courseY & 0b10) == 0){
+      quadrant = 0;
 
-  } else if(x > 63 && x <= 79){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 79 && x <= 95){
-    if(y <= 15){
+    } else if((courseY & 0b10) == 0b10) {
+       quadrant = 2;
+
+    }
+
+  } else if((courseX & 0b10) == 0b10){
+    if((courseY & 0b10) == 0){
       quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 95 && x <= 111){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 111 && x <= 127){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 127 && x <= 143){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 143 && x <= 159){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 159 && x <= 175){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 175 && x <= 191){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 191 && x <= 207){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 207 && x <= 223){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
-  } else if(x > 223 && x <= 239){
-    if(y <= 15){
-      quadrant = 0;
-    } else if(y > 15 && y <= 31){
-      quadrant = 2;
-    } else if(y > 31 && y <= 47){
-      quadrant = 0;
-    } else if(y > 47 && y <= 63){
-      quadrant = 2;
-    } else if(y > 63 && y <= 79){
-      quadrant = 0;
-    } else if(y > 79 && y <= 95){
-      quadrant = 2;
-    } else if(y > 95 && y <= 111){
-      quadrant = 0;
-    } else if(y > 111 && y <= 127){
-      quadrant = 2;
-    } else if(y > 127 && y <= 143){
-      quadrant = 0;
-    } else if(y > 143 && y <= 159){
-      quadrant = 2;
-    } else if(y > 159 && y <= 175){
-      quadrant = 0;
-    } else if(y > 175 && y <= 191){
-      quadrant = 2;
-    } else if(y > 191 && y <= 207){
-      quadrant = 0;
-    } else if(y > 207 && y <= 223){
-      quadrant = 2;
-    } else if(y > 223 && y <= 239){
-      quadrant = 0;
-    } else if(y > 239 && y <= 255){
-      quadrant = 2;
-    } 
-  } else if(x > 239 && x <= 255){
-    if(y <= 15){
-      quadrant = 1;
-    } else if(y > 15 && y <= 31){
-      quadrant = 3;
-    } else if(y > 31 && y <= 47){
-      quadrant = 1;
-    } else if(y > 47 && y <= 63){
-      quadrant = 3;
-    } else if(y > 63 && y <= 79){
-      quadrant = 1;
-    } else if(y > 79 && y <= 95){
-      quadrant = 3;
-    } else if(y > 95 && y <= 111){
-      quadrant = 1;
-    } else if(y > 111 && y <= 127){
-      quadrant = 3;
-    } else if(y > 127 && y <= 143){
-      quadrant = 1;
-    } else if(y > 143 && y <= 159){
-      quadrant = 3;
-    } else if(y > 159 && y <= 175){
-      quadrant = 1;
-    } else if(y > 175 && y <= 191){
-      quadrant = 3;
-    } else if(y > 191 && y <= 207){
-      quadrant = 1;
-    } else if(y > 207 && y <= 223){
-      quadrant = 3;
-    } else if(y > 223 && y <= 239){
-      quadrant = 1;
-    } else if(y > 239 && y <= 255){
-      quadrant = 3;
-    } 
+
+    } else if((courseY & 0b10) == 0b10) {
+       quadrant = 3;
+
+    }
+
   }
-
+  
   uint8_t atb = attributeTableByte;
   if(quadrant == 0){
       atb = atb & 0b11;

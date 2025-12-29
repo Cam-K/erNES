@@ -135,7 +135,7 @@ void allocateNewFrameBuffer(PPU*);
 
 void printNameTable(Bus*);
 
-uint8_t findAndReturnAttributeByte(int, int, uint8_t);
+uint8_t findAndReturnAttributeByte(uint16_t, uint8_t);
 
 void dmaTransfer(Bus*);
 
