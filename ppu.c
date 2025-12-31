@@ -31,7 +31,6 @@ void initPpu(PPU* ppu){
   ppu->oamaddr = 0;
   ppu->oamdata = 0;
   ppu->addr = 0;
-  ppu->data = 0;
   ppu->oamdma = 0;
 
   ppu->scanLine = 0;
@@ -52,7 +51,7 @@ void resetPpu(PPU* ppu, int powerFlag){
     ppu->addr = 0;
     ppu->status = 0b10100000;
   }
-  ppu->data = 0;
+
   ppu->wregister = 0;
   ppu->vblank = 0;
   ppu->xScroll = 0;

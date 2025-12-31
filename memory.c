@@ -257,6 +257,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 uint8_t readBus(Bus* bus, uint16_t addr){
   //printf("Reading address %x \n", addr);
   uint8_t temp;
+  uint16_t temp16;
   if(bus->numOfBlocks == 0){
     return 0;
 
@@ -288,13 +289,18 @@ uint8_t readBus(Bus* bus, uint16_t addr){
       case 0x2005:
         return 0;
       case 0x2006:
-         if(bus->ppu->wregister == 0){
-          return bus->ppu->addr & 0xff;
-        } else if(bus->ppu->wregister == 1){
-          return ((bus->ppu->addr & 0xff00) >> 8);
-        }
+        return 0;
       case 0x2007:
-        return readPpuBus(bus->ppu, bus->ppu->vregister1);
+        temp16 = bus->ppu->vregister1;
+        temp = bus->ppu->data;
+        bus->ppu->data = readPpuBus(bus->ppu, bus->ppu->vregister1);
+        if(getBit(bus->ppu->ctrl, 2) == 0){
+          bus->ppu->vregister1++;
+          
+        } else if(getBit(bus->ppu->ctrl, 2) != 0){
+          bus->ppu->vregister1 += 32;
+        }
+        return temp;
     }
   } else if(addr == 0x4016){
     //printf("reading controller one \n");
