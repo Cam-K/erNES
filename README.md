@@ -1,8 +1,10 @@
 # Nintendo Entertainment System Emulator
 An NES emulator, written in C and SDL2.
 
-Only compatible with some mapper 0 games at the moment.
+Only compatible with mapper 0 games at the moment.
 Able to boot games such as Balloon Fight and Donkey Kong.
+
+Features a CPU tester to test against the Tom Harte tests with the appropriate JSON data.
 
 Currently a work in progress.
 
@@ -34,3 +36,7 @@ Currently a work in progress.
 
 
 
+## Screenshots
+
+![Donkey Kong](https://i.imgur.com/gbqdqQ5.png)
+![Bomberman](https://i.imgur.com/hcdkWeJ.png)

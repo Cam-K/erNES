@@ -111,6 +111,7 @@ struct aft {
 
 TestResults* jsonTesterParallel(char**, Bus*, int, int);
 void startNes(char*, int);
+void nesMainLoop(Bus*, SDL_Renderer*, SDL_Texture*);
 void freeAndExit(Bus*);
 
 struct tple{
@@ -498,6 +499,7 @@ void startNes(char* romPath, int screenScaling){
 
     case 0:
       // NROM Mapper
+      // Setup NROM mapper and starts the main loop
 
       // sets up address space and dumps rom contents into memory
       initBus(&bus, numOfPrgRoms);
@@ -538,108 +540,9 @@ void startNes(char* romPath, int screenScaling){
       // main loop
       // decodes and executes 1 scanline worth of instructions, then instructs ppu to render the scanline
       // once a 240 scanlines have been rendered, draw framebuffer to SDL and enable a vblank
- 
 
-      bus.ppu->scanLine = 0;
-      while(1){
-        if(bus.cpu->cycles < CPU_CYCLES_PER_SCANLINE){
-          oppCode = readBus(&bus, bus.cpu->pc);
-          bus.cpu->cycles += decodeAndExecute(bus.cpu, &bus, oppCode);
-          //printf("cycles total: %d \n", bus.cpu->cycles);
-        } else if(bus.cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
-
-          // render a scanline except while in vblank and during the prerender scanline (261)
-          if(bus.ppu->vblank == 0 && bus.ppu->prerenderScanlineFlag == 0){
-            renderScanline(bus.ppu);
-          }
-            bus.cpu->cycles = 0;
-            bus.ppu->scanLine++;
-
-            //printf("Scanline %d \n", bus.ppu->scanLine);
-            if(bus.ppu->scanLine == 240){
-              // Mirroring hack because bus.ppu->mirroring gets set with 0 despite us setting it to 1 for some reason
-              bus.ppu->mirroring = mirroring;              
-
-              vblankStart(&bus);
-              drawFrameBuffer(bus.ppu, renderer, texture);
-              //printNameTable(&bus);
-            } else if(bus.ppu->scanLine == 260){
-              vblankEnd(&bus);
-
-            } else if(bus.ppu->scanLine == 261){
-              prerenderScanline(&bus);
-
-            }
-
-        }
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-              case SDL_QUIT:
-                SDL_Quit(); 
-                freeAndExit(&bus);
-                break;
-              
-              case SDL_KEYDOWN:
-                switch(event.key.keysym.sym){
-                  case SDLK_x:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 0);
-                    break;
-                  case SDLK_z:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 1);
-                    break;
-                  case SDLK_RSHIFT:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 2);
-                    break;
-                  case SDLK_RETURN:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 3);
-                    break;
-                  case SDLK_UP:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 4);
-                    break;
-                  case SDLK_DOWN:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 5);
-                    break;
-                  case SDLK_LEFT:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 6);
-                    break;
-                  case SDLK_RIGHT:
-                    bus.controller1.sdlButtons = setBit(bus.controller1.sdlButtons, 7);
-                    break;
-
-                }
-                break;
-              case SDL_KEYUP:
-                switch(event.key.keysym.sym){
-                  case SDLK_x:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 0);
-                    break;
-                  case SDLK_z:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 1);
-                    break;
-                  case SDLK_RSHIFT:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 2);
-                    break;
-                  case SDLK_RETURN:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 3);
-                    break;
-                  case SDLK_UP:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 4);
-                    break;
-                  case SDLK_DOWN:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 5);
-                    break;
-                  case SDLK_LEFT:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 6);
-                    break;
-                  case SDLK_RIGHT:
-                    bus.controller1.sdlButtons = clearBit(bus.controller1.sdlButtons, 7);
-                    break;
-                }
-              }
-            }
-
-      }
-      
+      bus.ppu->mirroring = mirroring;
+      nesMainLoop(&bus, renderer, texture);
       break;
     default:
       printf("mapper is not compatible \nincompatible rom \n");
@@ -648,9 +551,6 @@ void startNes(char* romPath, int screenScaling){
 
   }
 
-
-
-  
 
   
     SDL_Quit();
@@ -662,6 +562,113 @@ void startNes(char* romPath, int screenScaling){
 
 }
 
+// nesMainLoop()
+// decodes and executes 1 scanline worth of instructions, then instructs ppu to render the scanline
+// once a 240 scanlines have been rendered, draw framebuffer to SDL and enable a vblank
+void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture){
+      uint8_t oppCode;
+      int mirroring = bus->ppu->mirroring;
+      SDL_Event event;
+      while(1){
+        if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
+          oppCode = readBus(bus, bus->cpu->pc);
+          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
+          //printf("cycles total: %d \n", bus.cpu->cycles);
+        } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
+
+          // render a scanline except while in vblank and during the prerender scanline (261)
+          if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
+            renderScanline(bus->ppu);
+          }
+            bus->cpu->cycles = 0;
+            bus->ppu->scanLine++;
+
+            //printf("Scanline %d \n", bus.ppu->scanLine);
+            if(bus->ppu->scanLine == 240){
+              // Mirroring hack because bus.ppu->mirroring gets set with 0 despite us setting it to 1 for some reason
+              bus->ppu->mirroring = mirroring; 
+
+              vblankStart(bus);
+              drawFrameBuffer(bus->ppu, renderer, texture);
+              //printNameTable(&bus);
+            } else if(bus->ppu->scanLine == 260){
+              vblankEnd(bus);
+
+            } else if(bus->ppu->scanLine == 261){
+              prerenderScanline(bus);
+
+            }
+
+        }
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+              case SDL_QUIT:
+                SDL_Quit(); 
+                freeAndExit(bus);
+                break;
+              
+              case SDL_KEYDOWN:
+                switch(event.key.keysym.sym){
+                  case SDLK_x:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 0);
+                    break;
+                  case SDLK_z:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 1);
+                    break;
+                  case SDLK_RSHIFT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 2);
+                    break;
+                  case SDLK_RETURN:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 3);
+                    break;
+                  case SDLK_UP:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 4);
+                    break;
+                  case SDLK_DOWN:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 5);
+                    break;
+                  case SDLK_LEFT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 6);
+                    break;
+                  case SDLK_RIGHT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
+                    break;
+
+                }
+                break;
+              case SDL_KEYUP:
+                switch(event.key.keysym.sym){
+                  case SDLK_x:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 0);
+                    break;
+                  case SDLK_z:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 1);
+                    break;
+                  case SDLK_RSHIFT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 2);
+                    break;
+                  case SDLK_RETURN:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 3);
+                    break;
+                  case SDLK_UP:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 4);
+                    break;
+                  case SDLK_DOWN:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 5);
+                    break;
+                  case SDLK_LEFT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
+                    break;
+                  case SDLK_RIGHT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
+                    break;
+                }
+              }
+            }
+
+
+}
+}
 
 
 void dumpFileToMemory(uint8_t* fileBuffer, Mem* mem, int offset, int size){

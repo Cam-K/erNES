@@ -507,7 +507,7 @@ void renderScanline(PPU* ppu){
               bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]]))));
               bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]] + 8))));      
             } else if((ppu->scanLine - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]] - 8))));
+              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (7 - ((ppu->scanLine - ppu->oam[oamIndices[j]]) - 8))));
               bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (7 - (ppu->scanLine - ppu->oam[oamIndices[j]]))));    
             }
 
