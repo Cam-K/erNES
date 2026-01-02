@@ -1,5 +1,5 @@
 # Nintendo Entertainment System Emulator
-A simple NES emulator, written in C and SDL2.
+An NES emulator, written in C and SDL2.
 
 Only compatible with some mapper 0 games at the moment.
 Able to boot games such as Balloon Fight and Donkey Kong.
@@ -7,22 +7,22 @@ Able to boot games such as Balloon Fight and Donkey Kong.
 Currently a work in progress.
 
 
-## How to compile on a Linux system:
+## How to compile on a Linux system
 ``make`` 
 
 
-## Libraries Needed (Ubuntu):
+## Libraries Needed (Ubuntu)
 ``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0-0``
 
 ## How to run
-### To print help:
+### To print help
 ``./nesemu -h``
 
-### To run a game:
+### To run a game
 ``./nesemu -n [FILE]``
 
 
-## Controls:
+## Controls
 | Keyboard      | NES Controller   |
 |---------------|------------------|
 | Arrow Keys    | Control Pad      |
