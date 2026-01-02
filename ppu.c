@@ -304,6 +304,8 @@ void renderScanline(PPU* ppu){
   uint8_t pixelValue1;
   uint8_t pixelValue2;
   uint8_t currentAttributeData;
+  uint16_t currentAttributeData1;
+  uint16_t currentAttributeData2;
   struct VComponent vcomp;
   uint8_t pixelValueFinal;
   uint16_t patternTableOffset;
@@ -377,12 +379,21 @@ void renderScanline(PPU* ppu){
 
         }
         incrementCourseX(ppu);
+
       }
 
 
+
       // fetch data from shift registers for the current pixel
-      currentAttributeData = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister) >> 15);
-      currentAttributeData = currentAttributeData | (getBitFromLeft16bit(ppu->attributeData2, ppu->xregister) >> 14);
+      currentAttributeData1 = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister));
+      currentAttributeData1 = currentAttributeData1 >> findBit16bit(currentAttributeData1);
+      
+      currentAttributeData2 = (getBitFromLeft16bit(ppu->attributeData2, ppu->xregister));
+      currentAttributeData2 = currentAttributeData2 >> findBit16bit(currentAttributeData2);
+      currentAttributeData2 = currentAttributeData2 << 1;
+      
+
+      currentAttributeData = currentAttributeData1 | currentAttributeData2;
 
       // $3f00 is hard-wired to be the backdrop color
       tempPalette[0] = readPpuBus(ppu, 0x3f00 + 0);
@@ -768,6 +779,7 @@ void prerenderScanline(Bus* bus){
   fetchFirstTwoTiles(bus->ppu, patternTableOffset);
   bus->ppu->prerenderScanlineFlag = 0;
   bus->ppu->scanLine = 0;
+
 }
 
 
