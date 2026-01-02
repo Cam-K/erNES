@@ -443,7 +443,7 @@ void startNes(char* romPath, int screenScaling){
   }
 
   SDL_Event event;
-  SDL_Window* win = SDL_CreateWindow("NES Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling, 0);
+  SDL_Window* win = SDL_CreateWindow("nesemu", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling, 0);
   SDL_Renderer *renderer;
   SDL_Texture *texture;
 
