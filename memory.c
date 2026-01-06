@@ -22,6 +22,7 @@
 
 
 #include "memory.h"
+#include "general.h"
 #include "ppu.h"
 
 
@@ -173,8 +174,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->ppu->mask = val;
         break;
       case 0x2002:
-        bus->ppu->status = val;
-        break;
+        return;
       case 0x2003:
         bus->ppu->oamaddr = val;
         break;
@@ -184,10 +184,10 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
       case 0x2005:
         if(bus->ppu->wregister == 0){
           bus->ppu->xregister = (val & 0x07);
-          bus->ppu->tregister.vcomp.courseX = (val & 0xf8) >> 3;
+          bus->ppu->tregister.vcomp.courseX = ((val & 0xf8) >> 3);
           bus->ppu->wregister = 1;
         } else if(bus->ppu->wregister == 1){
-          bus->ppu->tregister.vcomp.courseY = (val & 0xf8) >> 3;
+          bus->ppu->tregister.vcomp.courseY = ((val & 0xf8) >> 3);
           bus->ppu->tregister.vcomp.fineY = (val & 0x07);
           bus->ppu->wregister = 0;
         }
@@ -195,12 +195,12 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
       case 0x2006:
 
          if(bus->ppu->wregister == 0){
-         
-          bus->ppu->tregister.vreg = (((uint16_t)val) << 8);
-          bus->ppu->tregister.vcomp.fineY = clearBit(bus->ppu->tregister.vcomp.fineY, 2);
+
+          bus->ppu->tregister.vreg = (((uint16_t)val & 0x3f) << 8);
+          bus->ppu->tregister.vreg = clearBit16bit(bus->ppu->tregister.vreg, 14);
           bus->ppu->wregister = 1;
         } else if(bus->ppu->wregister == 1){
-          bus->ppu->tregister.vreg = bus->ppu->tregister.vreg | (uint16_t) val;
+          bus->ppu->tregister.vreg = bus->ppu->tregister.vreg | ((uint16_t) val);
           bus->ppu->vregister.vreg = bus->ppu->tregister.vreg;
           bus->ppu->wregister = 0;
         }
@@ -208,16 +208,14 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         break;
       case 0x2007:
         
-        bus->ppu->data = val;
-        //printf("Writing to bus at $2007 \n");
-        writePpuBus(bus->ppu, bus->ppu->vregister.vreg, bus->ppu->data);
-        //printf("Wrote to ppu bus %x with value %x \n", bus->ppu->vregister1, bus->ppu->data);
+        writePpuBus(bus->ppu, bus->ppu->vregister.vreg, val);
         if(getBit(bus->ppu->ctrl, 2) == 0){
           bus->ppu->vregister.vreg++;
           
         } else if(getBit(bus->ppu->ctrl, 2) != 0){
           bus->ppu->vregister.vreg += 32;
         }
+
         break;
     }
   } else if(addr == 0x4014){
@@ -298,16 +296,16 @@ uint8_t readBus(Bus* bus, uint16_t addr){
   } else if(addr >= 0x2000 && addr <= 0x3fff){
     switch(((addr % 8) + 0x2000)){
       case 0x2000:
-        return bus->ppu->ctrl;
+        return 0;
       case 0x2001:
-        return bus->ppu->mask;
+        return 0;
       case 0x2002:
         //printf("Reading status \n");
         //bus->ppu->status = clearBit(bus->ppu->status, 7);
         bus->ppu->wregister = 0;
         return bus->ppu->status;
       case 0x2003:
-        return bus->ppu->oamaddr;
+        return 0;
       case 0x2004:
         //printf("Reading oamdata \n");
         return bus->ppu->oam[bus->ppu->oamaddr];
@@ -316,14 +314,13 @@ uint8_t readBus(Bus* bus, uint16_t addr){
       case 0x2006:
         return 0;
       case 0x2007:
-        temp16 = bus->ppu->vregister1;
         temp = bus->ppu->data;
-        bus->ppu->data = readPpuBus(bus->ppu, bus->ppu->vregister1);
+        bus->ppu->data = readPpuBus(bus->ppu, bus->ppu->vregister.vreg);
         if(getBit(bus->ppu->ctrl, 2) == 0){
-          bus->ppu->vregister1++;
+          bus->ppu->vregister.vreg++;
           
         } else if(getBit(bus->ppu->ctrl, 2) != 0){
-          bus->ppu->vregister1 += 32;
+          bus->ppu->vregister.vreg += 32;
         }
         return temp;
     }

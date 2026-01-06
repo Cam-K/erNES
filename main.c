@@ -575,6 +575,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture){
       int fps_current = 0;
 
 
+
       while(1){
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           oppCode = readBus(bus, bus->cpu->pc);
@@ -583,7 +584,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture){
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
 
           // render a scanline except while in vblank and during the prerender scanline (261)
-          if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
+          if(getBit(bus->ppu->mask, 3) != 0 && getBit(bus->ppu->mask, 4) != 0 && bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
             renderScanline(bus->ppu);
           }
             bus->cpu->cycles = 0;
@@ -601,11 +602,11 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture){
                 fps_lastTime = SDL_GetTicks();
                 fps_current = sdlFrames;
                 sdlFrames = 0;
-                //printf("fps: %d \n", fps_current);
+                printf("fps: %d \n", fps_current);
 
               }
               
-              //printNameTable(&bus);
+              //printNameTable(bus);
             } else if(bus->ppu->scanLine == 260){
               vblankEnd(bus);
 

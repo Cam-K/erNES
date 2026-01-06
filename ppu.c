@@ -98,6 +98,7 @@ void resetPpu(PPU* ppu, int powerFlag){
 
   ppu->prerenderScanlineFlag = 0;
 
+
   
   
 
@@ -111,17 +112,9 @@ void dmaTransfer(Bus* bus){
   uint16_t addr;
 
   for(int i = 0; i <= 0xff; ++i){
-    /*
-    if(i % 4 == 0){
-      printf("oam dma ");;
-    }*/
-    
     addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
     bus->ppu->oam[i] = readBus(bus, addr);    
-   // printf("%x ", bus->ppu->oam[i]);
-
   }
-  //printf("\n");
 }
 
 // populatePalette()
@@ -383,8 +376,10 @@ void renderScanline(PPU* ppu){
       // every tile, fetch the two bitplanes from the patterntable two tiles ahead, to keep the buffer filled
       if(i != 0 && i % 8 == 0){ 
         fillTempV(&tempV, ppu->vregister.vcomp);
+        
         //printf("vreg %x \n", tempV + 0x2000);
         patternTableIndice = readPpuBus(ppu, 0x2000 + tempV);
+
 
         // fetch lsb and msb bitplanes and fill shift register buffers
         ppu->bitPlane1 = ppu->bitPlane1 | readPpuBus(ppu, patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY);
@@ -630,7 +625,6 @@ void fillTempV(uint16_t *tempV, struct VComponent vcomp){
 
 
 void incrementCourseX(PPU* ppu){
-
     if(ppu->vregister.vcomp.courseX == 31){
       ppu->vregister.vcomp.courseX = 0;
       ppu->vregister.vcomp.nameTableSelect = getBit(ppu->vregister.vcomp.nameTableSelect, 1) | (getBit(ppu->vregister.vcomp.nameTableSelect, 0) ^ 0b01);
@@ -638,7 +632,7 @@ void incrementCourseX(PPU* ppu){
     } else {
       ppu->vregister.vcomp.courseX++;
     }
-
+  
 }
 
 
