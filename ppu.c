@@ -454,13 +454,15 @@ void renderScanline(PPU* ppu){
     // this is kept for later when checking for a sprite zero hit
       bitsCombinedBackground = bitsCombined;
     } else if(getBit(ppu->mask, 3) == 0){
+      bitsCombinedBackground = 0;
       ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[63];
     }
 
 
    
 
-    
+    // if sprite rendering is enabled
+    if(getBit(ppu->mask, 4) != 0){
     // Second, now iterate through the amount of sprites that were found from Sprite Evaluation and display them if the beam resides in it's X coordinate
     for(int j = 0; j < spriteEvalCounter; ++j){
 
@@ -538,8 +540,8 @@ void renderScanline(PPU* ppu){
         bit2 = bit2 << 1;
         bitsCombined = bit1 | bit2;
 
-        // if the colour isn't a transparency pixel and sprite rendering is enabled, draw the pixel
-        if(bitsCombined != 0 && getBit(ppu->mask, 4) == 0b10000){
+        // if the colour isn't a transparency pixel, draw the pixel
+        if(bitsCombined != 0){
 
           // if the background isn't transparent or the sprite is behind the backgrond, draw the pixel
           if(bitsCombinedBackground == 0 || getBit(ppu->oam[oamIndices[j] + 2], 5) == 0){
@@ -571,7 +573,7 @@ void renderScanline(PPU* ppu){
         }
     }
   }
-  
+  }
   }
 
   // if background rendering is enabled, increment v
@@ -793,19 +795,20 @@ void prerenderScanline(Bus* bus){
 
   // hori(v) = hori(t)
   // copy all x components from t to v
-  bus->ppu->vregister.vcomp.courseX = bus->ppu->tregister.vcomp.courseX;
-  bus->ppu->vregister.vcomp.nameTableSelect = (bus->ppu->tregister.vcomp.nameTableSelect & 0b1);
+  if(getBit(bus->ppu->mask, 3) != 0){
+    bus->ppu->vregister.vcomp.courseX = bus->ppu->tregister.vcomp.courseX;
+    bus->ppu->vregister.vcomp.nameTableSelect = (bus->ppu->tregister.vcomp.nameTableSelect & 0b1);
   
 
-  // vert(v) = vert(t)
-  // copy all y components from t to v
-  bus->ppu->vregister.vcomp.courseY = bus->ppu->tregister.vcomp.courseY;
-  bus->ppu->vregister.vcomp.fineY = bus->ppu->tregister.vcomp.fineY;
-  bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 0) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 1);
+    // vert(v) = vert(t)
+    // copy all y components from t to v
+    bus->ppu->vregister.vcomp.courseY = bus->ppu->tregister.vcomp.courseY;
+    bus->ppu->vregister.vcomp.fineY = bus->ppu->tregister.vcomp.fineY;
+    bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 0) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 1);
 
   
-  fetchFirstTwoTiles(bus->ppu);
-
+    fetchFirstTwoTiles(bus->ppu);
+  }
   bus->ppu->prerenderScanlineFlag = 0;
   bus->ppu->scanLine = 0;
 
