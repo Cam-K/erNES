@@ -10,8 +10,8 @@ Currently a work in progress.
 
 
 ## How to compile on a Linux system
-``git clone https://github.com/Cam-K/nesemu.git``
-``cd nesemu``
+``git clone https://github.com/Cam-K/nesemu.git``  
+``cd nesemu``  
 ``make`` 
 
 
