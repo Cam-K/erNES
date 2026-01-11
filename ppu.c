@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "ansicolor.h"
+
 
 
 // initPpu()
@@ -232,13 +232,9 @@ void printNameTable(Bus* bus){
   for(int i = 0; i < 0x1f; ++i){
     printf("%x ", i);
     for(int j = 0; j < 0x20; ++j){
-      if(readPpuBus(bus->ppu, 0x2000 + j + (32 * i)) == 0x62){
-         red(); 
-      } else if(readPpuBus(bus->ppu, 0x2000 + j + (32 * i)) != 0x24){
-        yellow();
-      }
+   
       printf("%x ", readPpuBus(bus->ppu, 0x2000 + j + (32 * i)));
-      default_color(); 
+
     }
     printf("\n");
   }
