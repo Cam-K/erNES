@@ -474,7 +474,7 @@ void startNes(char* romPath, int screenScaling){
   tempInt = fgetc(romPtr);
   bus.mapper = (tempInt >> 4) & 0b1111;
 
-  bus.ppu->mirroring = getBit(tempInt, 0);
+ 
   mirroring = getBit(tempInt, 0);
   printf("mirroring %d \n", bus.ppu->mirroring);
   bus.mapper = (bus.mapper | ((fgetc(romPtr) & 0b11110000)));
@@ -489,11 +489,7 @@ void startNes(char* romPath, int screenScaling){
     fgetc(romPtr);
   }
   
-  if(numOfChrRoms == 0){
-    bus.ppu->flagChrRam = 1;
-  } else {
-    bus.ppu->flagChrRam = 0;
-  }
+
 
   switch(bus.mapper){
 
@@ -534,7 +530,7 @@ void startNes(char* romPath, int screenScaling){
       } else {
         bus.ppu->flagChrRam = 0;
       }
-
+      bus.ppu->mirroring = mirroring;
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
       }
@@ -542,8 +538,7 @@ void startNes(char* romPath, int screenScaling){
       SDL_RenderClear(renderer);
       SDL_RenderPresent(renderer);
       printf("SDL initialized! \n");
-  
-      bus.ppu->mirroring = mirroring;
+ 
       nesMainLoop(&bus, renderer, texture, screenScaling);
       break;
     
@@ -667,8 +662,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
           }
             
             if(bus->ppu->scanLine == 240){
-              // Mirroring hack because bus.ppu->mirroring gets set with 0 despite us setting it to 1 for some reason
-              bus->ppu->mirroring = mirroring; 
+   
               vblankStart(bus);
               drawFrameBuffer(bus->ppu, renderer, texture);
  
