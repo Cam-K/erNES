@@ -39,7 +39,7 @@ void initMemStruct(Mem* mem, uint64_t size, enum DeviceType type, int inuse){
   mem->startAddr = 0;
   mem->endAddr = 0;
   mem->inuse = inuse;
-  mem->mapped = 0;
+  //mem->mapped = 0;
 
   clearMem(mem);
 }
@@ -263,6 +263,13 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
           bus->bankSelect = val;
           bus->bankSelect = bus->bankSelect & 0xf;
         }
+        break;
+      case 3:
+        if(addr >= 0x8000 && addr <= 0xffff){
+          bus->ppu->bankSelect = val;
+          bus->ppu->bankSelect = bus->ppu->bankSelect & 0b11;
+        }
+        break;
       }
     }
   
@@ -448,6 +455,12 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         } else if(addr >= 0xc000 && addr <= 0xffff){
           return bus->memArr[bus->numOfBlocks - 1].contents[addr - 0xc000];
         }
+      case 3:
+        if(addr >= 0x8000 && addr <= 0xbfff){
+          return bus->memArr[1].contents[addr - 0x8000];
+        } else if(addr >= 0xc000 && addr <= 0xffff){
+          return bus->memArr[2].contents[addr - 0xc000];
+        }
         
       
     }
@@ -508,7 +521,14 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 
 uint8_t readPpuBus(PPU* ppu, uint16_t addr){
   if(addr >= 0x0000 && addr <= 0x1fff){
-    return ppu->chrrom[addr];
+    switch(ppu->mapper){
+      case 0:
+        return ppu->ppubus->memArr[0].contents[addr];
+      case 2:
+        return ppu->ppubus->memArr[0].contents[addr];
+      case 3:
+        return ppu->ppubus->memArr[ppu->bankSelect].contents[addr];
+    }
   } else if(addr >= 0x2000 && addr <= 0x2fff){
     return ppu->vram[addr - 0x2000];
   } else if (addr >= 0x3000 && addr <= 0x3eff){
@@ -537,12 +557,14 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
 void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
   //printf("Writing to PPU address %x with value %x \n", addr, val);
   if(addr >= 0x0000 && addr <= 0x1fff){
-    if(ppu->flagChrRam == 1){
-      ppu->chrrom[addr] = val;
-    } else {
-      return;
+    if(ppu->mapper == 0 || ppu->mapper == 2){
+      if(ppu->ppubus->memArr[0].type == Ram){
+        ppu->ppubus->memArr[0].contents[addr] = val;
+      } else {
+        return;
+      }
     }
-    
+    return;
   } else if(addr >= 0x2000 && addr <= 0x2fff){
 
 

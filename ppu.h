@@ -35,7 +35,7 @@ enum DeviceTypePPU {CHRRom, CHRRam, VRam};
 typedef struct _Mem Mem;
 typedef struct _Bus Bus;
 
-typedef struct _PPUBUS {
+typedef struct _PPUBus {
 
   Mem* memArr;
   int numOfBlocks;
@@ -116,30 +116,22 @@ typedef struct _PPU {
 
   // NOTE: The following registers require an understanding of https://www.nesdev.org/wiki/PPU_scrolling
 
-  // used to hold the ppu address for PPUADDR and PPUDATA
-  uint16_t vregister1;
-  
-
   // fineX scroll component
   uint8_t xregister;
   
+  // during rendering, used to hold the address of the currently fetched nametable address, outside of rendering, used to hold the VRAM address for reading/writing PPUDATA/PPUADDR
   union VRegister vregister;
 
-  // temporary nametable address (offset of top left nametable address)
+  // during rendering, used to hold the scroll position (top left tile, or zero-th tile in the nametable.
+  // outside of rendering, used to temporarily hold the VRAM address before transferring it to vregister
   union VRegister tregister;
 
-  // currently drawn nametable address
-  struct VComponent vregister2;
+
 
   // 16-bit shift registers used for storing pattern table data
   uint16_t bitPlane1;
   uint16_t bitPlane2;
 
-  // shift register for storing attribute data
-  // sets of two bits, composed of two sets each
-  // |0|0|0|0|S2|S2|S1|S1|
-  // each set gets popped off the front (lsb) of the integer
-  uint8_t attributeData;
 
 
   // attribute data shift registers
@@ -164,9 +156,14 @@ typedef struct _PPU {
 
   uint32_t palette[0x40];
 
+  int mapper;
+
+  // used to select the bank for CNROM games
+  int bankSelect;
+
 } PPU;
 
-void initPpu(PPU*);
+void initPpu(PPU*, int);
 void resetPpu(PPU*, int);
 
 void populatePalette(PPU*);

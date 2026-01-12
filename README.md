@@ -1,12 +1,19 @@
 # nesemu
 A Nintendo Entertainment System emulator, written in C.
 
-Only compatible with mapper 0 and mapper 2 games at the moment.
+
+## Description
+
 Able to boot games such as Castlevania and Super Mario Bros.
 
 Features a CPU tester to check the core against the Tom Harte processor routines, with the appropriate JSON data.
 
 Currently a work in progress.
+
+### Mapper Support:
+- Mapper 0 (NROM)
+- Mapper 2 (UxROM)
+- Mapper 3 (CNROM)
 
 
 ## How to compile on a Linux system

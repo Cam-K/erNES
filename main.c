@@ -503,7 +503,7 @@ void startNes(char* romPath, int screenScaling){
       initMemStruct(&(bus.memArr[1]), 0x8000, Rom, TRUE);
 
 
-      initPpu(bus.ppu);
+      initPpu(bus.ppu, numOfChrRoms);
       populatePalette(bus.ppu);
       
 
@@ -517,20 +517,30 @@ void startNes(char* romPath, int screenScaling){
           bus.memArr[1].contents[i] = fgetc(romPtr);
         }
       }
-      
+      if(numOfChrRoms == 0){
+
+        initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
+      } else {
+        initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Rom, TRUE);
+      }
       // loads chr-rom into ppu memory
       for(int i = 0; i < (8192 * numOfChrRoms); ++i){
-        bus.ppu->chrrom[i] = fgetc(romPtr);
+        bus.ppu->ppubus->memArr[0].contents[i] = fgetc(romPtr);
+
       }
       
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+
+      bus.ppu->mapper = bus.mapper;
       if(numOfChrRoms == 0){
         bus.ppu->flagChrRam = 1;
       } else {
         bus.ppu->flagChrRam = 0;
       }
+
       bus.ppu->mirroring = mirroring;
+
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
       }
@@ -550,25 +560,74 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(&(bus.memArr[i]), 0x4000, Rom, TRUE);
       }
 
-      initPpu(bus.ppu);
+      initPpu(bus.ppu, numOfChrRoms);
       populatePalette(bus.ppu);
-
+ 
+      if(numOfChrRoms == 0){
+        initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
+      } else {
+        initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Rom, TRUE);
+      }
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
           bus.memArr[i + 1].contents[j] = fgetc(romPtr);
         }
       }
       for(int i = 0; i < (0x2000 * numOfChrRoms); ++i){
-        bus.ppu->chrrom[i] = fgetc(romPtr);
+        bus.ppu->ppubus->memArr[0].contents[i] = fgetc(romPtr);
+
       }
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      bus.ppu->mapper = bus.mapper;
 
-      if(numOfChrRoms == 0){
-        bus.ppu->flagChrRam = 1;
-      } else {
-        bus.ppu->flagChrRam = 0;
+
+
+      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("error initializing SDL: %s\n", SDL_GetError());
       }
+
+      SDL_RenderClear(renderer);
+      SDL_RenderPresent(renderer);
+      printf("SDL initialized! \n");
+  
+      bus.ppu->mirroring = mirroring;
+
+      // once machine has been setup to the mapper's needs, enter main loop
+      nesMainLoop(&bus, renderer, texture, screenScaling);
+
+      break;
+    case 3:
+      printf("nnumofprgroms: %d \n", numOfChrRoms);
+      initBus(&bus, numOfPrgRoms + 1);
+      initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
+      for(int i = 1; i <= numOfPrgRoms + 1; ++i){
+        initMemStruct(&(bus.memArr[i]), 0x4000, Rom, TRUE);
+      }
+
+      initPpu(bus.ppu, numOfChrRoms);
+      populatePalette(bus.ppu);
+      for(int i = 0; i < numOfChrRoms; ++i){
+        initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x2000, Rom, TRUE);
+      }
+
+      for(int i = 0; i < numOfPrgRoms; ++i){
+        for(int j = 0; j < 0x4000; ++j){
+          bus.memArr[i + 1].contents[j] = fgetc(romPtr);
+        }
+      }
+ 
+      for(int i = 0; i < numOfChrRoms; ++i){
+        for(int j = 0; j < 0x2000; ++j){
+          bus.ppu->ppubus->memArr[i].contents[j] = fgetc(romPtr);
+        }
+      }
+
+      reset(bus.cpu, &bus);
+      resetPpu(bus.ppu, 1);
+      bus.ppu->mapper = bus.mapper;
+
+
 
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
@@ -592,7 +651,7 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(&(bus.memArr[i]), 0x8000, Rom, TRUE);
       }
 
-      initPpu(bus.ppu);
+      initPpu(bus.ppu, numOfChrRoms);
       populatePalette(bus.ppu);
 
       break;

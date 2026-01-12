@@ -36,7 +36,6 @@
 typedef struct _CPU CPU;
 typedef struct _PPU PPU;
 
-typedef struct _PPUBUS PPUBus;
 
 
 
@@ -117,11 +116,7 @@ typedef struct _Bus {
 
 } Bus; 
 
-union BusTypes {
-  PPUBus* ppubus;
-  Bus* bus;
 
-};
 
 
 void initMemStruct(Mem*, uint64_t, enum DeviceType, int);

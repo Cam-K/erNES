@@ -35,18 +35,20 @@
 
 // initPpu()
 //   initializes PPU
-void initPpu(PPU* ppu){
+void initPpu(PPU* ppu, int banks){
 
   ppu->chrrom = calloc(8192, sizeof(uint8_t));
   ppu->oam = malloc(sizeof(uint8_t) * 64 * 4);
   ppu->paletteram = calloc(32, sizeof(uint8_t));
   ppu->vram = calloc(0x1400, sizeof(uint8_t));
+  ppu->ppubus = calloc(1, sizeof(PPUBus));
 
+  ppu->ppubus->memArr = calloc(banks, sizeof(struct _Mem));
+  ppu->ppubus->numOfBlocks = banks;
   printf("initializing PPU \n");
   ppu->frameBuffer = malloc(sizeof(uint32_t*) * 242);
   
   for(int i = 0; i < 242; ++i){
-    //ppu->frameBuffer[i] = malloc(sizeof(uint32_t) * WINDOW_WIDTH);
     ppu->frameBuffer[i] = calloc(WINDOW_WIDTH, sizeof(uint32_t));
   } 
 
@@ -84,12 +86,7 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->yScroll = 0;
   ppu->scanLine = 0;
   ppu->frames = 0;
-  ppu->vregister1 = 0;
 
-  ppu->vregister2.courseX = 0;
-  ppu->vregister2.courseY = 0;
-  ppu->vregister2.fineY = 0;
-  ppu->vregister2.nameTableSelect = 0;
   ppu->xregister = 0;
   ppu->vregister.vreg = 0;
   ppu->tregister.vreg = 0;
