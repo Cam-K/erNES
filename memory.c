@@ -388,31 +388,31 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           temp = getBit(bus->controller2.latchedButtons, 0);
           break;
         case 1:
-          bus->controller1.readCount++;
+          bus->controller2.readCount++;
           temp = getBit(bus->controller2.latchedButtons, 1) >> 1;
           break;
         case 2:
-          bus->controller1.readCount++;
+          bus->controller2.readCount++;
           temp = getBit(bus->controller2.latchedButtons, 2) >> 2;
           break;
         case 3:
-          bus->controller1.readCount++;
+          bus->controller2.readCount++;
           temp = getBit(bus->controller2.latchedButtons, 3) >> 3;
           break;
         case 4:
-          bus->controller1.readCount++;
+          bus->controller2.readCount++;
           temp = getBit(bus->controller2.latchedButtons, 4) >> 4;
           break;
         case 5:
-          bus->controller1.readCount++; 
+          bus->controller2.readCount++; 
           temp = getBit(bus->controller2.latchedButtons, 5) >> 5;
           break;
         case 6:
-          bus->controller1.readCount++;
+          bus->controller2.readCount++;
           temp = getBit(bus->controller2.latchedButtons, 6) >> 6;
           break;
         case 7:
-          bus->controller1.readCount = 0;
+          bus->controller2.readCount = 0;
           temp = getBit(bus->controller2.latchedButtons, 7) >> 7;
           break;
         default:

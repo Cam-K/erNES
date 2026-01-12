@@ -30,7 +30,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -42,7 +41,6 @@
 #include "memory.h"
 #include "ppu.h"
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_timer.h>
 #include "general.h"
 
@@ -591,6 +589,18 @@ void startNes(char* romPath, int screenScaling){
       nesMainLoop(&bus, renderer, texture, screenScaling);
 
       break;
+    case 7:
+      printf("numofprgroms %x \n", numOfPrgRoms);
+      initBus(&bus, numOfPrgRoms + 1);
+      initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
+      for(int i = 1; i <= (numOfPrgRoms + 1) / 2; ++i){
+        initMemStruct(&(bus.memArr[i]), 0x8000, Rom, TRUE);
+      }
+
+      initPpu(bus.ppu);
+      populatePalette(bus.ppu);
+
+      break;
     default:
       printf("mapper is not compatible \nincompatible rom \n");
       exit(0);
@@ -624,16 +634,18 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       int sdlFrames = 0;
       int fps_lastTime = SDL_GetTicks();
       int fps_current = 0;
+      int processLightGunInput = 0;
       const double target_fps = 60.0;
       const double target_frame_time = 1000.0 / target_fps;
-
+      int framesLastTime = 0;
+      int framesFirstTime = 0;
+      int mouseX;
+      int mouseY;
 
 
       while(1){
       // mark time at the start of the frame being drawn
-       if(bus->ppu->scanLine == 0){
-        frame_start = SDL_GetPerformanceCounter();
-       }
+ 
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           oppCode = readBus(bus, bus->cpu->pc);
           bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
@@ -644,11 +656,15 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
           if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
             renderScanline(bus->ppu);
           }
+
             // increment scanline
             bus->cpu->cycles = 0;
             bus->ppu->scanLine++;
             bus->ppu->scanLineSprites++;
+          if(bus->ppu->scanLine == 1){
+            frame_start = SDL_GetPerformanceCounter();
 
+          }
             
             if(bus->ppu->scanLine == 240){
               // Mirroring hack because bus.ppu->mirroring gets set with 0 despite us setting it to 1 for some reason
@@ -679,13 +695,20 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                 printf("fps: %d \n", fps_current);
 
               }
-
+            if(processLightGunInput >= 1 && processLightGunInput <= 2){
+              printf("frame processed %d \n", bus->ppu->frames);
+              printf("%x \n", bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling]);
+              if(bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffffff || bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffc6c3){
+                bus->controller2.lightSensor = 0;
+                processLightGunInput = 0;
+                printf("detected! \n");
+    
+              } else {
+                bus->controller2.lightSensor = 1;
+                processLightGunInput++;
+              }
             }
-        }
-        
 
-        // poll for events at the start of the frame 
-        if(bus->ppu->scanLine == 0){
           while (SDL_PollEvent(&event)) {
               switch (event.type) {
                 case SDL_QUIT:
@@ -744,23 +767,18 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                       break;
                     case SDLK_LEFT:
                       bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
-                      break;
+                      break;                    printf("color: %x \n", bus->ppu->frameBuffer[event.motion.y / screenScaling][event.motion.x / screenScaling]);
+
                     case SDLK_RIGHT:
                       bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
                       break;
                   }
                   break;
                   case SDL_MOUSEBUTTONDOWN:
-              
-                    if(bus->ppu->frameBuffer[event.motion.y / screenScaling][event.motion.x / screenScaling] == 0xffffff){
-                      bus->controller2.lightSensor = 0;
-                      printf("detected! \n");
-    
-                    } else {
-                      bus->controller2.lightSensor = 1;
-                    }
-                    printf("color: %x \n", bus->ppu->frameBuffer[event.motion.y / screenScaling][event.motion.x / screenScaling]);
-                    
+                    processLightGunInput = 1;
+                    mouseX = event.motion.x;
+                    mouseY = event.motion.y;
+                    printf("frame received %d \n", bus->ppu->frames);
                     bus->controller2.triggerPulled = 1;
                     break;
                     
@@ -769,7 +787,13 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                     break;
                 }
               }
-          }
+
+            }
+        }
+        
+
+        // poll for events at the start of the frame 
+       
   }
 }
 
