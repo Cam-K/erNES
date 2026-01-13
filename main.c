@@ -151,7 +151,9 @@ int main(int argc, char* argv[]){
   char fileDirectory[MAX_STR];
   char file[MAX_STR];
   char screenScaling[MAX_STR];
+  screenScaling[0] = '\0';
   uint8_t* fileBuffer;
+
 
   FILE* fptr;
   printf("    nesemu  Copyright (C) 2026  Cameron Kelly \n This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n This is free software, and you are welcome to redistribute it \n under certain conditions; type `show c' for details. \n");
@@ -476,7 +478,6 @@ void startNes(char* romPath, int screenScaling){
 
  
   mirroring = getBit(tempInt, 0);
-  printf("mirroring %d \n", bus.ppu->mirroring);
   bus.mapper = (bus.mapper | ((fgetc(romPtr) & 0b11110000)));
   
   fgetc(romPtr);
@@ -559,7 +560,7 @@ void startNes(char* romPath, int screenScaling){
       for(int i = 1; i <= numOfPrgRoms + 1; ++i){
         initMemStruct(&(bus.memArr[i]), 0x4000, Rom, TRUE);
       }
-
+      
       initPpu(bus.ppu, numOfChrRoms);
       populatePalette(bus.ppu);
  
@@ -745,7 +746,9 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                 fps_lastTime = SDL_GetTicks();
                 fps_current = sdlFrames;
                 sdlFrames = 0;
-                printf("fps: %d \n", fps_current);
+                if(fps_current != 1){
+                  printf("fps: %d \n", fps_current);
+                }
 
               }
             if(processLightGunInput >= 1 && processLightGunInput <= 2){
@@ -1198,9 +1201,18 @@ void freeAndExit(Bus* bus){
   free(bus->ppu->oam);
   free(bus->ppu->paletteram);
   free(bus->ppu->vram);
-
+  for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){
+    free(bus->ppu->ppubus->memArr[i].contents);
+  }
+  for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){
+    free(&bus->ppu->ppubus->memArr[i]);
+  }
+  free(bus->ppu);
   free(bus->cpu);
+  free(bus->ppu->ppubus);
+  
   free(bus->memArr);
+  
   exit(0);
 
 

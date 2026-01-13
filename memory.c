@@ -103,7 +103,9 @@ void mapMemory(Bus* bus, uint16_t index, uint16_t addr){
 
 // inits the bus and the things connected to it
 void initBus(Bus* bus, uint16_t banks){
+  
   bus->memArr = calloc(banks, sizeof(Mem));
+  
   bus->cpu = (CPU*) malloc(sizeof(CPU));
   bus->ppu = (PPU*) malloc(sizeof(PPU));
   bus->numOfBlocks = banks;
@@ -117,6 +119,8 @@ void initBus(Bus* bus, uint16_t banks){
   bus->controller2.readCount = 0;
   bus->controller2.sdlButtons = 0x00;
 
+  bus->controller2.triggerPulled = 0;
+  bus->controller2.lightSensor = 0;
 
 
   bus->bankSelect = 0;
@@ -308,8 +312,8 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 // does not make use of the bounds checking of the starAddr and endAddr for each Mem struct
 uint8_t readBus(Bus* bus, uint16_t addr){
   //printf("Reading address %x \n", addr);
-  uint8_t temp;
-  uint16_t temp16;
+  uint8_t temp = 0;
+  uint16_t temp16 = 0;
   if(bus->numOfBlocks == 0){
     return 0;
 

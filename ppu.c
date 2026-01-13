@@ -38,12 +38,16 @@
 void initPpu(PPU* ppu, int banks){
 
   ppu->chrrom = calloc(8192, sizeof(uint8_t));
-  ppu->oam = malloc(sizeof(uint8_t) * 64 * 4);
+  ppu->oam = calloc(64 * 4, sizeof(uint8_t));
   ppu->paletteram = calloc(32, sizeof(uint8_t));
   ppu->vram = calloc(0x1400, sizeof(uint8_t));
   ppu->ppubus = calloc(1, sizeof(PPUBus));
 
-  ppu->ppubus->memArr = calloc(banks, sizeof(struct _Mem));
+  if(banks > 0){
+    ppu->ppubus->memArr = calloc(banks, sizeof(struct _Mem));
+  } else if(banks == 0){
+    ppu->ppubus->memArr = calloc(1, sizeof(Mem));
+  }
   ppu->ppubus->numOfBlocks = banks;
   printf("initializing PPU \n");
   ppu->frameBuffer = malloc(sizeof(uint32_t*) * 242);
