@@ -38,7 +38,7 @@
 void initPpu(PPU* ppu, int banks){
 
   ppu->chrrom = calloc(8192, sizeof(uint8_t));
-  ppu->oam = calloc(64 * 4, sizeof(uint8_t));
+  ppu->oam = calloc(256, sizeof(uint8_t));
   ppu->paletteram = calloc(32, sizeof(uint8_t));
   ppu->vram = calloc(0x1400, sizeof(uint8_t));
   ppu->ppubus = calloc(1, sizeof(PPUBus));
@@ -253,7 +253,7 @@ int getEightSixteen(PPU* ppu){
     return 1;
     
   }
-
+  return -1;
 }
 
 
@@ -312,34 +312,25 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
 //
 
 void renderScanline(PPU* ppu){
-  uint8_t currentIndiceBitPlane1;
-  uint8_t currentIndiceBitPlane2;
-  int attributeTableQuandrant;
+
   uint8_t attributeTableByte;
   uint16_t patternTableIndice;
-  uint16_t patternTableIndice1;
-  uint16_t patternTableIndice2;
-  uint8_t bitPlane1;
-  uint8_t bitPlane2;
+  uint8_t bitPlane1 = 0;
+  uint8_t bitPlane2 = 0;
   uint8_t bit1;
   uint8_t bit2;
   uint16_t bit1_16;
   uint16_t bit2_16;
   uint8_t bitsCombined;
-  uint8_t pixelValue1;
-  uint8_t pixelValue2;
   uint8_t currentAttributeData;
   uint16_t currentAttributeData1;
   uint16_t currentAttributeData2;
-  struct VComponent vcomp;
-  uint8_t pixelValueFinal;
-  uint16_t patternTableOffset;
+  uint16_t patternTableOffset = 0;
   uint8_t spritePaletteIndex;
-  uint8_t bitsCombinedBackground;
+  uint8_t bitsCombinedBackground = 0;
   int spriteEvalCounter = 0;
   int eightSixteenSpriteFlag;
-  uint16_t spritePatternTableOffset;
-  uint16_t spritePatternTableIndice;
+  uint16_t spritePatternTableOffset = 0;
   uint8_t oamIndices[9];
   uint8_t tempPalette[4]; 
   uint16_t tempV;
@@ -547,7 +538,7 @@ void renderScanline(PPU* ppu){
         // if the colour isn't a transparency pixel, draw the pixel
         if(bitsCombined != 0){
 
-          // if the background isn't transparent or the sprite is behind the backgrond, draw the pixel
+          // if the background is transparent or the sprite is behind the backgrond, draw the pixel
           if(bitsCombinedBackground == 0 || getBit(ppu->oam[oamIndices[j] + 2], 5) == 0){
           // fetch sprite palette index from oam memory and set palette
             spritePaletteIndex = getBit(ppu->oam[oamIndices[j] + 2], 0);
@@ -604,7 +595,7 @@ void incrementY(PPU* ppu){
       ppu->vregister.vcomp.courseY = 0;
 
       // toggle Y nametable select bit
-      ppu->vregister.vcomp.nameTableSelect = getBit(ppu->vregister.vcomp.nameTableSelect, 1) ^ 0b10 | getBit(ppu->vregister.vcomp.nameTableSelect, 0);
+      ppu->vregister.vcomp.nameTableSelect = (getBit(ppu->vregister.vcomp.nameTableSelect, 1) ^ 0b10) | getBit(ppu->vregister.vcomp.nameTableSelect, 0);
   
     } else if(ppu->vregister.vcomp.courseY == 31){
       ppu->vregister.vcomp.courseY = 0;
@@ -673,7 +664,7 @@ void fetchFirstTwoTiles(PPU* ppu){
   uint16_t patternTableIndice;
   uint16_t tempV;
   uint8_t attributeTableByte;
-  uint16_t patternTableOffset;
+  uint16_t patternTableOffset = 0;
 
   if(getBit(ppu->ctrl, 4) == 0){
     patternTableOffset = 0;

@@ -59,7 +59,10 @@ typedef struct _CPU {
 
 
   // used for the calculation of the carry flag
-  uint8_t prevpf; 
+  uint8_t prevpf;
+
+  // causes microprocessor to halt 
+  int haltFlag;
   
 
   int nmiInterruptFlag;
@@ -106,6 +109,7 @@ int bne(CPU*, Bus*);
 int bpl(CPU*, Bus*);
 int bvc(CPU*, Bus*);
 int bvs(CPU*, Bus*);
+void halt(CPU*);
 
 int clc(CPU*);
 int cld(CPU*);

@@ -61,7 +61,6 @@ void clearMem(Mem* mem){
 // NOTE: Only used in 6502 mode. Not needed for NES Mode. the memory mapping is fixed in NES mode.
 
 void mapMemory(Bus* bus, uint16_t index, uint16_t addr){
-  int mapMemoryFlag;
 
   Mem* mem = &(bus->memArr[index]);
   
@@ -103,11 +102,13 @@ void mapMemory(Bus* bus, uint16_t index, uint16_t addr){
 
 // inits the bus and the things connected to it
 void initBus(Bus* bus, uint16_t banks){
-  
-  bus->memArr = calloc(banks, sizeof(Mem));
-  
-  bus->cpu = (CPU*) malloc(sizeof(CPU));
-  bus->ppu = (PPU*) malloc(sizeof(PPU));
+  if(banks > 0){
+    bus->memArr = calloc(banks, sizeof(Mem));
+  } else if (banks == 0){
+    bus->memArr = calloc(1, sizeof(Mem));
+  }
+  bus->cpu = malloc(sizeof(CPU));
+  bus->ppu = malloc(sizeof(PPU));
   bus->numOfBlocks = banks;
   bus->controller1.latchedButtons = 0x00;
   bus->controller1.strobed = 0;
@@ -469,7 +470,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
       
     }
   }
-
+  return 0;
 }
 
 #endif
@@ -524,7 +525,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 #elif NESEMU == 1
 
 uint8_t readPpuBus(PPU* ppu, uint16_t addr){
-  if(addr >= 0x0000 && addr <= 0x1fff){
+  if(addr <= 0x1fff){
     switch(ppu->mapper){
       case 0:
         return ppu->ppubus->memArr[0].contents[addr];
@@ -560,7 +561,7 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
 
 void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
   //printf("Writing to PPU address %x with value %x \n", addr, val);
-  if(addr >= 0x0000 && addr <= 0x1fff){
+  if(addr <= 0x1fff){
     if(ppu->mapper == 0 || ppu->mapper == 2){
       if(ppu->ppubus->memArr[0].type == Ram){
         ppu->ppubus->memArr[0].contents[addr] = val;
@@ -853,7 +854,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 #endif
 
 void mapPpuMemory(PPUBus* bus, uint16_t index, uint16_t addr){
-  int mapMemoryFlag;
+
   Mem* mem = &(bus->memArr[index]);
   
   // TODO: implement error checking; most namely trying to map a block with not enough

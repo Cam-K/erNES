@@ -105,7 +105,7 @@ uint16_t setBitFromLeft16bit(uint16_t val, uint8_t bitNum){
 // finds the first instance of a 1-bit in a bitstring
 uint8_t findBit(uint8_t val){
 
-  int placement;
+  int placement = -1;
   for(int i = 0; i < 8; ++i){
     if(getBit(val, i) != 0){
       placement = i;
@@ -122,7 +122,7 @@ uint8_t findBit(uint8_t val){
 
 uint16_t findBit16bit(uint16_t val){
 
-  int placement;
+  int placement = -1;
   for(int i = 0; i < 16; ++i){
     if(getBit16bit(val, i) != 0){
       placement = i;

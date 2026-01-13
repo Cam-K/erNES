@@ -81,7 +81,7 @@ int jsonTester(char*, Bus*, processorState*);
 
 // struct to encapsulate the results from a json test.
 // needed for multithreaded tests
-struct _tr {
+typedef struct _tr {
 
   // stores the last instruction executed
   uint8_t instruction;
@@ -93,32 +93,25 @@ struct _tr {
 
 
 
-} typedef TestResults;
+} TestResults;
 
 //
 // struct used to pass arguments to a thread with 
 // pthread_create that only accepts void* as arguments
-struct aft {
+typedef struct aft {
 
   Bus* bus;
   char file[MAX_STR];
   uint8_t opcodeToTest;
   TestResults* testResults;
 
-} typedef ArgsForThreads;
+} ArgsForThreads;
 
 TestResults* jsonTesterParallel(char**, Bus*, int, int);
 void startNes(char*, int);
 void nesMainLoop(Bus*, SDL_Renderer*, SDL_Texture*, int);
 void freeAndExit(Bus*);
 
-struct tple{
-
-  pthread_t thread;
-  uint8_t opcodeTested;
-  int successFlag;
-
-} typedef ThreadTuple;
 
 
 
@@ -683,8 +676,8 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       SDL_Event event;
       uint64_t freq = SDL_GetPerformanceFrequency();
       uint64_t last = SDL_GetPerformanceCounter();
-      uint64_t frame_start;
-      uint64_t frame_end;
+      uint64_t frame_start = 0;
+      uint64_t frame_end = 0;
       double elasped_ms;
       int sdlFrames = 0;
       int fps_lastTime = SDL_GetTicks();
@@ -823,7 +816,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                       break;
                     case SDLK_LEFT:
                       bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
-                      break;                    printf("color: %x \n", bus->ppu->frameBuffer[event.motion.y / screenScaling][event.motion.x / screenScaling]);
+                      break;                  
 
                     case SDLK_RIGHT:
                       bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
@@ -1080,7 +1073,6 @@ int jsonTester(char* file, Bus* bus, processorState* state){
   cJSON* final;
   cJSON* initRam;
   cJSON* finalRam;
-  cJSON* pc;
   processorState initStruct;
   processorState finalStruct;
 
@@ -1204,12 +1196,11 @@ void freeAndExit(Bus* bus){
   for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){
     free(bus->ppu->ppubus->memArr[i].contents);
   }
-  for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){
-    free(&bus->ppu->ppubus->memArr[i]);
-  }
+  free(bus->ppu->ppubus->memArr);
+  free(bus->ppu->ppubus);
   free(bus->ppu);
   free(bus->cpu);
-  free(bus->ppu->ppubus);
+
   
   free(bus->memArr);
   
