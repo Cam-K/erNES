@@ -114,6 +114,7 @@ typedef struct _Bus {
   uint8_t numOfBlocks;
   CPU* cpu;
 
+
   // peripherals on the bus
   PPU* ppu;
   Controller controller1;
@@ -129,6 +130,7 @@ typedef struct _Bus {
   // used as the shift register for MMC1 games
   // only 5 bits in length
   MMC1 mmc1;
+
 
 
 

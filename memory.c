@@ -333,7 +333,11 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
       case 2:
         if(addr >= 0x8000){
           bus->bankSelect = val;
-          bus->bankSelect = bus->bankSelect & 0xf;
+          if(bus->numOfBlocks <= 9){
+            bus->bankSelect = bus->bankSelect & 0x7;
+          } else if(bus->numOfBlocks > 9){
+            bus->bankSelect = bus->bankSelect & 0xf;
+          }
         }
         break;
       case 3:

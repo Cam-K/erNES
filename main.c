@@ -642,13 +642,14 @@ void startNes(char* romPath, int screenScaling){
       break;
     case 2:
       printf("mapper 2 \n");
-      printf("numofprgroms %x \n", numOfPrgRoms);
       initBus(&bus, numOfPrgRoms + 1);
+      printf("numofprgroms %x \n", bus.numOfBlocks);
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
       for(int i = 1; i < numOfPrgRoms + 1; ++i){
         initMemStruct(bus.memArr + i, 0x4000, Rom, TRUE);
       }
       
+
       initPpu(bus.ppu, numOfChrRoms);
       populatePalette(bus.ppu);
  
