@@ -140,6 +140,7 @@ void initBus(Bus* bus, uint16_t banks){
 
 
   bus->bankSelect = 0;
+  bus->presenceOfPrgRam = 0;
   initMmc(&bus->mmc1); 
 }
 
@@ -532,13 +533,34 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           return bus->memArr[1].contents[addr - 0x6000];
         } else if(addr >= 0x8000){
           // 32 kb mode
-          if(bus->mmc1.control.reg && 0b1100 == 0 || bus->mmc1.control.reg && 0b1100 == 0b0100){
+          if(((bus->mmc1.control.reg & 0b1100) == 0) || ((bus->mmc1.control.reg & 0b1100) == 0b0100)){
             if(addr <= 0xbfff){
-              
+              return bus->memArr[bus->mmc1.prgBank.reg & 0b1110].contents[addr - 0x8000];
             } else if(addr >= 0xc000){
-   
+              // plus one because we want to get the next 16kb chunk if we are in 32kb mode, since the memory is divided up into 16k chunks\
+              // on the back end anyways. So we emulate a 32kb entire chunk this way.
+              return bus->memArr[(bus->mmc1.prgBank.reg & 0b1110) + 1].contents[addr - 0xc000]; 
             }
-          } 
+            // if bit 2 and 3 equal 2
+          } else if ((bus->mmc1.control.reg & 0b1100) == 0b1000){
+           if(addr <= 0xbfff){
+            // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
+            // prgram is present or not.
+              return bus->memArr[1 + bus->presenceOfPrgRam].contents[addr - 0x8000];
+            } else if(addr >= 0xc000){
+              return bus->memArr[bus->mmc1.prgBank.reg + bus->presenceOfPrgRam + 1].contents[addr - 0xc000]; 
+            }
+            // if bit 2 and bit 3 equal 3
+          } else if ((bus->mmc1.control.reg & 0b1100) == 0b1100){
+           if(addr <= 0xbfff){
+            // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
+            // prgram is present or not.
+              return bus->memArr[bus->mmc1.prgBank.reg + bus->presenceOfPrgRam + 1].contents[addr - 0x8000];
+            } else if(addr >= 0xc000){
+              return bus->memArr[bus->numOfBlocks].contents[addr - 0xc000]; 
+            }
+            
+          }
           return bus->memArr[2].contents[addr - 0x8000];
         }
         break;

@@ -581,8 +581,11 @@ void startNes(char* romPath, int screenScaling){
       printf("numofprgrom: %d \n", numOfPrgRoms);
       if(prgRamSize == 0){
         initBus(&bus, numOfPrgRoms + 1);
+        bus.presenceOfPrgRam = 0;
+      
       } else {
         initBus(&bus, numOfPrgRoms + 2);
+        bus.presenceOfPrgRam = 1;
       }
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
 
@@ -592,6 +595,7 @@ void startNes(char* romPath, int screenScaling){
         for(int i = 2; i < numOfPrgRoms + 1; ++i){
           initMemStruct(bus.memArr + i, 0x4000, Rom, TRUE);
         }
+        
       } else {
 
         for(int i = 1; i < numOfPrgRoms + 1; ++i){

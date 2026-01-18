@@ -131,6 +131,8 @@ typedef struct _Bus {
   // only 5 bits in length
   MMC1 mmc1;
 
+  int presenceOfPrgRam;
+
 
 
 
