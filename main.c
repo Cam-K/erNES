@@ -422,10 +422,11 @@ void startNes(char* romPath, int screenScaling){
   int numOfPrgRoms;
   int numOfChrRoms;
   int cycles;
+  uint8_t byte10;
+  uint16_t prgNvramSize;
 
   uint16_t prgRamSize; // 0 - no PRG-RAM
   int tvSystem;
-  int presenceOfPrgRam; // boolean value whether PRG-RAM is present
   uint8_t oppCode;
   int scanlines = 0;
   uint8_t tempInt;
@@ -491,9 +492,21 @@ void startNes(char* romPath, int screenScaling){
   // byte 9
   fgetc(romPtr);
   // byte 10
-  prgRamSize = 64 << (fgetc(romPtr) & 0b1111);
+  byte10 = fgetc(romPtr);
+
+  // first check for PRG-RAM
+  prgRamSize = 64 << (byte10 & 0b1111);
   if(prgRamSize == 64){
     prgRamSize = 0;
+  }
+
+
+  // second check for PRG-NVRAM (PRG-RAM and NVRAM are mutually exclusive)
+  if(prgRamSize == 0){
+    prgRamSize = 64 << ((byte10 & 0b11110000) >> 4);
+    if(prgRamSize == 64){
+      prgRamSize = 0;
+    }
   }
 
   // byte 11
@@ -580,6 +593,7 @@ void startNes(char* romPath, int screenScaling){
     case 1: 
       printf("mapper 1 \n");
       printf("prgramsize %x \n", prgRamSize);
+
       printf("numofprgrom: %d \n", numOfPrgRoms);
       if(prgRamSize == 0){
         printf("prg ram not present \n");
@@ -592,6 +606,7 @@ void startNes(char* romPath, int screenScaling){
         initBus(&bus, numOfPrgRoms + 2);
         bus.presenceOfPrgRam = 1;
       }
+      // this is for 0x0000-0x07ff RAM
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
 
       if(prgRamSize == 0){
@@ -601,7 +616,15 @@ void startNes(char* romPath, int screenScaling){
         
       } else {
         // PRG-RAM gets allocated first ($6000-$7fff)
-        initMemStruct(bus.memArr + 1, prgRamSize, Ram, TRUE);
+        
+          initMemStruct(bus.memArr + 1, prgRamSize, Ram, TRUE);
+          /*
+          for(int i = 0; i < prgRamSize; ++i){
+            bus.memArr[1].contents[i] = rand() % (255 - 1);
+          }
+          */
+       
+        
         for(int i = 2; i < numOfPrgRoms + 2; ++i){
           initMemStruct(bus.memArr + i, 0x4000, Rom, TRUE);
         }
@@ -625,10 +648,12 @@ void startNes(char* romPath, int screenScaling){
           initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x1000, Rom, TRUE);
         }
       }
-
+      
+      int offset;
+      prgRamSize == 0 ? (offset = 1) : (offset = 2);
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
-          bus.memArr[i + 1].contents[j] = fgetc(romPtr);
+          bus.memArr[i + offset].contents[j] = fgetc(romPtr);
         }
       }
 

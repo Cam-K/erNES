@@ -54,7 +54,7 @@ void clearMem(Mem* mem){
 
 // used to initialize the internal MMC1 registers;
 void initMmc(MMC1* mmc1){
-
+  
   mmc1->chrBank0.reg = 0;
   mmc1->chrBank1.reg = 0;
   mmc1->prgBank.reg = 0;
@@ -282,7 +282,10 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         break;
 
       case 1:
-        if(addr >= 0x8000){
+        if(addr >= 0x6000 && addr <= 0x7fff && bus->presenceOfPrgRam == 1){
+          bus->memArr[1].contents[addr - 0x6000] = val;
+
+        } else if(addr >= 0x8000){
           if(getBit(val, 7) != 0){
             // clears the shift register, default value 0x10.
             bus->mmc1.shiftRegister.reg = 0x10;
@@ -312,8 +315,16 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
                 bus->mmc1.control.reg = bus->mmc1.shiftRegister.reg;
                 if((bus->mmc1.control.reg & 0b11) == 2){
                   bus->ppu->mirroring = 1;
+                  printf("changing nametable mirroring \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 3){
                   bus->ppu->mirroring = 0;
+                  printf("changing nametable mirroring \n");
+                } else if((bus->mmc1.control.reg & 0b11) == 0){
+                  bus->ppu->mirroring = 2;
+                  printf("lower bank, one screen mirroring \n");
+                } else if((bus->mmc1.control.reg & 0b11) == 1){
+                  bus->ppu->mirroring = 3;
+                  printf("upper bank, one screen mirroring \n");
                 }
               } else if(addr >= 0xa000 & addr <= 0xbfff){
                 bus->mmc1.chrBank0.reg = bus->mmc1.shiftRegister.reg;
@@ -529,10 +540,13 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         break;
       case 1:
         if(addr >= 0x6000 & addr <= 0x7fff){
-          printf("reading prg ram \n");
           // index 1 corresponds to PRG-RAM for mapper 1
           if(bus->presenceOfPrgRam == 1){
+            printf("reading prg ram \n");
+            uint8_t temp;
+            
             return bus->memArr[1].contents[addr - 0x6000];
+
           } else {
             return 0;
           }
@@ -541,9 +555,9 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 
           // 32 kb mode
           if(((bus->mmc1.control.reg & 0b1100) == 0) || ((bus->mmc1.control.reg & 0b1100) == 0b0100)){
-            printf("32kb mode \n");
+            //printf("32kb mode \n");
             if(addr <= 0xbfff){
-              printf("prgbank %x \n", bus->mmc1.prgBank.reg + 1 + bus->presenceOfPrgRam);
+              //printf("prgbank %x \n", bus->mmc1.prgBank.reg + 1 + bus->presenceOfPrgRam);
               // + 1 + presenceofPrgRam because we need the offset after the initial RAM and potentially PRG-RAM, if present
               return bus->memArr[(bus->mmc1.prgBank.reg & 0b1110) + 1 + bus->presenceOfPrgRam].contents[addr - 0x8000];
             } else if(addr >= 0xc000){
@@ -556,7 +570,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
             }
             // if bit 2 and 3 equals 2
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1000){
-            printf("16 kb first bank fixed mode \n");
+            //printf("16 kb first bank fixed mode \n");
            if(addr <= 0xbfff){
             // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
             // prgram is present or not.
