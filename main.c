@@ -538,8 +538,9 @@ void startNes(char* romPath, int screenScaling){
       initMemStruct(&(bus.memArr[1]), 0x8000, Rom, TRUE);
 
 
-      initPpu(bus.ppu, numOfChrRoms);
-      printf("%d \n", numOfChrRoms);
+      // + 2 because we have CHR-ROM/RAM plus the two nametables we have to allocate.
+      initPpu(bus.ppu, numOfChrRoms + 2);
+      printf("%d \n", numOfChrRoms + 2);
       populatePalette(bus.ppu);
       
       
@@ -560,6 +561,8 @@ void startNes(char* romPath, int screenScaling){
       } else {
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Rom, TRUE);
       }
+      initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x2000, Rom, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x2000, Rom, TRUE);
       // loads chr-rom into ppu memory
       for(int i = 0; i < (8192 * numOfChrRoms); ++i){
         bus.ppu->ppubus->memArr[0].contents[i] = fgetc(romPtr);
@@ -595,6 +598,7 @@ void startNes(char* romPath, int screenScaling){
       printf("prgramsize %x \n", prgRamSize);
 
       printf("numofprgrom: %d \n", numOfPrgRoms);
+      printf("numofchrrrom %d \n", numOfChrRoms);
       if(prgRamSize == 0){
         printf("prg ram not present \n");
         // + 1 because we have to account for 0x000-0x7ff ram, alongside the PRG-ROM
@@ -632,21 +636,29 @@ void startNes(char* romPath, int screenScaling){
       }
       
       if(numOfChrRoms > 0){
-        initPpu(bus.ppu, numOfChrRoms * 2);
+        // this is (numOfChrroms * 2) + 2 because numofchrroms * 2 equals the amount of 4KB bank pattern tables we need to allocate and + 2 because
+        // we need to allocate the two nametables.
+        initPpu(bus.ppu, (numOfChrRoms * 2) + 2);
       } else if(numOfChrRoms == 0){
-        initPpu(bus.ppu, 2);
+        // 4 because we need to allocate memory for both pattern tables and the two nametables
+        initPpu(bus.ppu, 4);
       }
       populatePalette(bus.ppu);
 
       if(numOfChrRoms == 0){
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x1000, Ram, TRUE);
         initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x1000, Ram, TRUE);
+        initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Ram, TRUE);
+        initMemStruct(&(bus.ppu->ppubus->memArr[3]), 0x400, Ram, TRUE);
         
       } else {
         printf("setting up chrroms \n");
         for(int i = 0; i < numOfChrRoms * 2; ++i){
           initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x1000, Rom, TRUE);
         }
+        initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms * 2]), 0x400, Ram, TRUE);
+        initMemStruct(&(bus.ppu->ppubus->memArr[(numOfChrRoms * 2) + 1]), 0x400, Ram, TRUE);
+
       }
       
       int offset;
@@ -693,21 +705,30 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(bus.memArr + i, 0x4000, Rom, TRUE);
       }
       
-
-      initPpu(bus.ppu, numOfChrRoms);
+      if(numOfChrRoms == 0){
+        initPpu(bus.ppu, numOfChrRoms + 3);
+      } else {
+        initPpu(bus.ppu, numOfChrRoms + 2);
+      } 
       populatePalette(bus.ppu);
  
+      // zero chr-roms signifies there is one CHR-RAM connected
       if(numOfChrRoms == 0){
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
       } else {
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Rom, TRUE);
       }
+
+      // allocate two nametables
+      initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x400, Rom, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Rom, TRUE);
+      
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
           bus.memArr[i + 1].contents[j] = fgetc(romPtr);
         }
       }
-      for(int i = 0; i < (0x2000 * numOfChrRoms); ++i){
+      for(int i = 0; i < 0x2000; ++i){
         bus.ppu->ppubus->memArr[0].contents[i] = fgetc(romPtr);
 
       }
@@ -740,12 +761,14 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(bus.memArr + i, 0x4000, Rom, TRUE);
       }
 
-      initPpu(bus.ppu, numOfChrRoms);
+      initPpu(bus.ppu, numOfChrRoms + 2);
       populatePalette(bus.ppu);
       for(int i = 0; i < numOfChrRoms; ++i){
         initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x2000, Rom, TRUE);
       }
-
+      // allocate the two nametables at the end
+      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms]), 0x400, Rom, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms + 1]), 0x400, Rom, TRUE);
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
           bus.memArr[i + 1].contents[j] = fgetc(romPtr);

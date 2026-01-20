@@ -328,6 +328,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
                 }
               } else if(addr >= 0xa000 & addr <= 0xbfff){
                 bus->mmc1.chrBank0.reg = bus->mmc1.shiftRegister.reg;
+                printf("changing chrbank0 to %x \n", bus->mmc1.chrBank0.reg);
               } else if(addr >= 0xc000 & addr <= 0xdfff){
                 bus->mmc1.chrBank1.reg = bus->mmc1.shiftRegister.reg;
               } else if(addr >= 0xe000 & addr <= 0xffff){
@@ -542,8 +543,6 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         if(addr >= 0x6000 & addr <= 0x7fff){
           // index 1 corresponds to PRG-RAM for mapper 1
           if(bus->presenceOfPrgRam == 1){
-            printf("reading prg ram \n");
-            uint8_t temp;
             
             return bus->memArr[1].contents[addr - 0x6000];
 
@@ -673,10 +672,16 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
       case 1:
         // if chr-rom mode bit is equal to zero
         if(getBit(ppu->mmc1Copy.control.reg, 4) == 0){
+          MMC1Register temp; 
+          temp.reg = ppu->mmc1Copy.chrBank0.reg;
+          if(ppu->ppubus->numOfBlocks == 2){
+            // for SNROM Games
+            temp.reg = temp.reg & 0b1111;
+          }
            if(addr <= 0xfff){
-             return ppu->ppubus->memArr[ppu->mmc1Copy.chrBank0.reg & 0b11110].contents[addr];
+             return ppu->ppubus->memArr[temp.reg & 0b11110].contents[addr];
            } else if(addr >= 0x1000){
-             return ppu->ppubus->memArr[(ppu->mmc1Copy.chrBank0.reg & 0b11110) + 1].contents[addr - 0x1000];
+             return ppu->ppubus->memArr[(temp.reg & 0b11110) + 1].contents[addr - 0x1000];
            }
 
           // if chr-rom mode bit is equal to one
@@ -695,7 +700,34 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
         return ppu->ppubus->memArr[ppu->bankSelect].contents[addr];
     }
   } else if(addr >= 0x2000 && addr <= 0x2fff){
-    return ppu->vram[addr - 0x2000];
+    // vertical arrangement
+    if(ppu->mirroring == 0){
+      if(addr <= 0x23ff){
+        // numofblocks - 2 because we want to get the second last Mem block, which is the first nametable
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000];
+      } else if(addr >= 0x2400 && addr <= 0x27ff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2400];
+
+      } else if(addr >= 0x2800 && addr <= 0x2bff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2800];
+      } else if(addr >= 0x2c00 && addr <= 0x2fff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2c00];
+      }
+      // horizontal arrangement
+    } else if(ppu->mirroring == 1){
+      if(addr <= 0x23ff){
+        // numofblocks - 2 because we want to get the second last Mem block, which is the first nametable
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000];
+      } else if(addr >= 0x2400 && addr <= 0x27ff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2400];
+
+      } else if(addr >= 0x2800 && addr <= 0x2bff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2800];
+      } else if(addr >= 0x2c00 && addr <= 0x2fff){
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2c00];
+      }
+    }
+    //return ppu->vram[addr - 0x2000];
   } else if (addr >= 0x3000 && addr <= 0x3eff){
     return ppu->vram[addr - 0x3000];
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
@@ -731,15 +763,21 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
     } else if(ppu->mapper == 1){
 
       if(getBit(ppu->mmc1Copy.control.reg, 4) == 0){
+          uint8_t temp; 
+          temp = ppu->mmc1Copy.chrBank0.reg;
+          if(ppu->ppubus->numOfBlocks == 2){
+            // For SNROM Games
+            temp = temp & 0b1111;
+          }
         if(addr <= 0xfff){
-          if(ppu->ppubus->memArr[ppu->mmc1Copy.chrBank0.reg & 0b1111].type == Ram){
-            ppu->ppubus->memArr[ppu->mmc1Copy.chrBank0.reg & 0b11110].contents[addr] = val;
+          if(ppu->ppubus->memArr[temp & 0b1111].type == Ram){
+            ppu->ppubus->memArr[temp & 0b11110].contents[addr] = val;
           } else {
             return;
           }
         } else if(addr >= 0x1000){
-          if(ppu->ppubus->memArr[(ppu->mmc1Copy.chrBank0.reg & 0b11110) + 1].type == Ram){
-            ppu->ppubus->memArr[(ppu->mmc1Copy.chrBank0.reg & 0b11110) + 1].contents[addr - 0x1000] = val;
+          if(ppu->ppubus->memArr[(temp & 0b11110) + 1].type == Ram){
+            ppu->ppubus->memArr[(temp & 0b11110) + 1].contents[addr - 0x1000] = val;
           } else {
             return;
           }
@@ -771,28 +809,27 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 
     // vertical arrangement (horizontal mirroring)
     if(ppu->mirroring == 0){
-      if(addr >= 0x2000 && addr <= 0x23ff){
-        ppu->vram[(addr - 0x2000) + 0x400] = val;
-      } else if(addr >= 0x2400 && addr <= 0x27ff){
-        ppu->vram[(addr - 0x2000) - 0x400] = val;
+      if(addr <= 0x23ff){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000] = val;
+      } else if(addr >= 0x2400 && addr <= 0x27ff  ){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2400] = val;
       } else if(addr >= 0x2800 && addr <= 0x2bff){
-        ppu->vram[(addr - 0x2000) + 0x400] = val;
-      } else if(addr >= 0x2c00 && addr <= 0x2fff){
-        ppu->vram[(addr - 0x2000) - 0x400] = val;
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2800] = val;
+      } else if(addr >= 0x2c00){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2c00] = val;
       }
+
       // horizontal arrangement (vertical mirroring)
     } else if(ppu->mirroring == 1){
-
-      if(addr >= 0x2000 && addr <= 0x23ff){
-        ppu->vram[(addr - 0x2000) + 0x800] = val;
-      } else if(addr >= 0x2400 && addr <= 0x27ff){
-        ppu->vram[(addr - 0x2000) + 0x800] = val;
+      if(addr <= 0x23ff){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000] = val;
+      } else if(addr >= 0x2400 && addr <= 0x27ff  ){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2400] = val;
       } else if(addr >= 0x2800 && addr <= 0x2bff){
-        ppu->vram[(addr - 0x2000) - 0x800] = val;
-      } else if(addr >= 0x2c00 && addr <= 0x2fff){
-        ppu->vram[(addr - 0x2000) - 0x800] = val;
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2800] = val;
+      } else if(addr >= 0x2c00){
+        ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2c00] = val;
       }
-    
     }
 
   } else if (addr >= 0x3000 && addr <= 0x3eff){

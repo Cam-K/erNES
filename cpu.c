@@ -1063,15 +1063,13 @@ int cmp(CPU* cpu, Bus* bus, AddrMode mode){
   uint8_t value;
   value = addressModeDecode(cpu, bus, mode);
 
-  //checkCFlag(cpu, cpu->a, value, SUB);
   if(value <= cpu->a){
     cpu->pf = setBit(cpu->pf, C);
   } else {
     cpu->pf = clearBit(cpu->pf, C);
   }
   value = cpu->a - value;
-  //printf("value: %d \n", value);
-  //printf("accumlator: %d \n", cpu->a);
+
   checkZFlag(cpu, value);
   checkNFlag(cpu, value);
 

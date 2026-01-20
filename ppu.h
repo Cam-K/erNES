@@ -105,7 +105,7 @@ typedef struct _PPU {
   // they are displayed at)
   uint8_t* vram;
 
-  // used to store nametables when the game is using single-screen mirroring (AxROM, SxROM, and TLSROM boards only).
+  // used to store two nametables
   uint8_t* vramA;
   uint8_t* vramB;
 
