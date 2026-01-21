@@ -155,7 +155,7 @@ uint8_t readBus(Bus*, uint16_t);
 void writeBus(Bus*, uint16_t, uint8_t);
 void mapMemory(Bus*, uint16_t, uint16_t);
 
-void initMmc(MMC1*);
+void initMmc1(MMC1*);
 
 uint8_t readPpuBus(PPU*, uint16_t);
 void writePpuBus(PPU*, uint16_t, uint8_t);

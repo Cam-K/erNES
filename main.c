@@ -610,7 +610,7 @@ void startNes(char* romPath, int screenScaling){
         initBus(&bus, numOfPrgRoms + 2);
         bus.presenceOfPrgRam = 1;
       }
-      // this is for 0x0000-0x07ff RAM
+      // this is initializing 0x0000-0x07ff RAM
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
 
       if(prgRamSize == 0){
@@ -1355,7 +1355,6 @@ void freeAndExit(Bus* bus){
   free(bus->ppu->chrrom);
   free(bus->ppu->oam);
   free(bus->ppu->paletteram);
-  free(bus->ppu->vram);
   for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){
     free(bus->ppu->ppubus->memArr[i].contents);
   }

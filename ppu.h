@@ -101,13 +101,6 @@ typedef struct _PPU {
   // used for sprites
   uint8_t* oam;
 
-  // used to store nametables (buffer in memory that stores what sprites and which coordinates 
-  // they are displayed at)
-  uint8_t* vram;
-
-  // used to store two nametables
-  uint8_t* vramA;
-  uint8_t* vramB;
 
   PPUBus* ppubus;
 

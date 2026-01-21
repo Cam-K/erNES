@@ -40,7 +40,6 @@ void initPpu(PPU* ppu, int banks){
   ppu->chrrom = calloc(8192, sizeof(uint8_t));
   ppu->oam = calloc(256, sizeof(uint8_t));
   ppu->paletteram = calloc(32, sizeof(uint8_t));
-  ppu->vram = calloc(0x1400, sizeof(uint8_t));
   ppu->ppubus = calloc(1, sizeof(PPUBus));
 
   if(banks > 0){
@@ -237,7 +236,7 @@ void printNameTable(Bus* bus){
   for(int i = 0; i < 0x1f; ++i){
     printf("%x ", i);
     for(int j = 0; j < 0x20; ++j){
-   
+      
       printf("%x ", readPpuBus(bus->ppu, 0x2000 + j + (32 * i)));
 
     }

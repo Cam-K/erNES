@@ -53,7 +53,7 @@ void clearMem(Mem* mem){
 
 
 // used to initialize the internal MMC1 registers;
-void initMmc(MMC1* mmc1){
+void initMmc1(MMC1* mmc1){
   
   mmc1->chrBank0.reg = 0;
   mmc1->chrBank1.reg = 0;
@@ -141,7 +141,7 @@ void initBus(Bus* bus, uint16_t banks){
 
   bus->bankSelect = 0;
   bus->presenceOfPrgRam = 0;
-  initMmc(&bus->mmc1); 
+  initMmc1(&bus->mmc1); 
 }
 
 #if NESEMU == 0
@@ -314,15 +314,19 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
               if(addr >= 0x8000 & addr <= 0x9fff){
                 bus->mmc1.control.reg = bus->mmc1.shiftRegister.reg;
                 if((bus->mmc1.control.reg & 0b11) == 2){
+                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 1;
                   printf("changing nametable mirroring vertical arrangement \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 3){
+                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 0;
                   printf("changing nametable mirroring horizontal arrangement \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 0){
+                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 2;
                   printf("lower bank, one screen mirroring \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 1){
+                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 3;
                   printf("upper bank, one screen mirroring \n");
                 }
@@ -731,7 +735,7 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
       // one screen, lower bank
     } else if(ppu->mirroring == 2){
       if(addr <= 0x23ff){
-        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2400];
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000];
       } else if(addr >= 0x2400 && addr <= 0x27ff){
         return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2400];
       } else if(addr >= 0x2800 && addr <= 0x2bff){
@@ -742,7 +746,7 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
       // one screen, upper bank
     } else if(ppu->mirroring == 3){
       if(addr <= 0x23ff){
-        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2400];
+        return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2000];
       } else if(addr >= 0x2400 && addr <= 0x27ff){
         return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2400];
       } else if(addr >= 0x2800 && addr <= 0x2bff){
@@ -751,9 +755,8 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
         return ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 1].contents[addr - 0x2c00];
       }
     }
-    //return ppu->vram[addr - 0x2000];
   } else if (addr >= 0x3000 && addr <= 0x3eff){
-    return ppu->vram[addr - 0x3000];
+    return 0;
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
     return ppu->paletteram[addr - 0x3f00];
   } else if(addr >= 0x3f20 && addr <= 0x3f3f){
@@ -832,8 +835,6 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
   } else if(addr >= 0x2000 && addr <= 0x2fff){
 
 
-    ppu->vram[addr - 0x2000] = val;
-
     // vertical arrangement (horizontal mirroring)
     if(ppu->mirroring == 0){
       if(addr <= 0x23ff){
@@ -860,6 +861,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
 
       // one screen, lower bank 
     } else if(ppu->mirroring == 2){
+      //printf("writing %d to %x \n", val, addr);
       if(addr <= 0x23ff){
         ppu->ppubus->memArr[ppu->ppubus->numOfBlocks - 2].contents[addr - 0x2000] = val;
       } else if(addr >= 0x2400 && addr <= 0x27ff){
@@ -883,7 +885,8 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
     }
 
   } else if (addr >= 0x3000 && addr <= 0x3eff){
-    ppu->vram[addr - 0x3000] = val;
+    // TODO: implement nametable mirroring thru 0x3000-0x3fff
+    return; 
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
 
     // palette mirroring
