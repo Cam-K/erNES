@@ -314,21 +314,13 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
               if(addr >= 0x8000 & addr <= 0x9fff){
                 bus->mmc1.control.reg = bus->mmc1.shiftRegister.reg;
                 if((bus->mmc1.control.reg & 0b11) == 2){
-                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 1;
-                  printf("changing nametable mirroring vertical arrangement \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 3){
-                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 0;
-                  printf("changing nametable mirroring horizontal arrangement \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 0){
-                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 2;
-                  printf("lower bank, one screen mirroring \n");
                 } else if((bus->mmc1.control.reg & 0b11) == 1){
-                  printf("changing from %d to \n", bus->ppu->mirroring);
                   bus->ppu->mirroring = 3;
-                  printf("upper bank, one screen mirroring \n");
                 }
               } else if(addr >= 0xa000 & addr <= 0xbfff){
                 bus->mmc1.chrBank0.reg = bus->mmc1.shiftRegister.reg;
@@ -358,10 +350,13 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         break;
       case 3:
         if(addr >= 0x8000){
-          bus->ppu->bankSelect = val;
-          bus->ppu->bankSelect = bus->ppu->bankSelect & 0b11;
+          bus->ppu->bankSelect = val & 0b11;
         }
         break;
+      case 7:
+        if(addr >= 0x8000){
+          bus->bankSelect = val & 0b111;
+        }
       }
     }
   
@@ -609,7 +604,10 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         } else if(addr >= 0xc000){
           return bus->memArr[2].contents[addr - 0xc000];
         }
-        
+      case 7:
+        if(addr >= 0x8000){
+          return bus->memArr[bus->bankSelect + 1].contents[addr - 0x8000];
+        }
       
     }
   }

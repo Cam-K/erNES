@@ -130,7 +130,7 @@ typedef struct _Bus {
   // mapper number
   int mapper;
 
-  // used for UxROM games
+  // used for UxROM games and AxROM games
   uint8_t bankSelect;
 
   // used as the shift register for MMC1 games

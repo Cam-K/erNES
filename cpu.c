@@ -1884,7 +1884,7 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 
 
 uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
-  uint16_t lowByte, highByte, byte, addr;
+  uint16_t lowByte, highByte, byte, addr, currPage, newPage;
   uint8_t zeroPageAddr;
   switch(mode){
     case immediate:
@@ -1897,25 +1897,31 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       lowByte = readBus(bus, ++cpu->pc);
       highByte = readBus(bus, ++cpu->pc);
-      uint16_t currPage = cpu->pc & 0xff00;
-      uint16_t newPage = ((highByte << 8) + lowByte) & 0xff00;
-      // TODO: implement proper pageFlag behaviour i.e. it's set when a page boundary is crossed
-      // for absoluteX, absoluteY and indirectY
-      if(currPage == newPage){
-        pageFlag = 1;
-      } else {
-        pageFlag = 0;
-      }
+
       return readBus(bus, (highByte << 8) + lowByte);
 
     case absoluteX:        
       lowByte = readBus(bus, ++cpu->pc); 
       highByte = readBus(bus, ++cpu->pc); 
+      currPage = ((highByte << 8) | lowByte) & 0xff00;
+      newPage = (((highByte << 8) | lowByte) + cpu->x) & 0xff00;
+      if(currPage == newPage){
+        pageFlag = 0;
+      } else {
+        pageFlag = 1;
+      }
       return readBus(bus, (highByte << 8) + lowByte + cpu->x);
 
     case absoluteY:
       lowByte = readBus(bus, ++cpu->pc); 
-      highByte = readBus(bus, ++cpu->pc); 
+      highByte = readBus(bus, ++cpu->pc);
+      currPage = ((highByte << 8) | lowByte) & 0xff00;
+      newPage = (((highByte << 8) | lowByte) + cpu->y) & 0xff00;
+      if(currPage == newPage){
+        pageFlag = 0;
+      } else {
+        pageFlag = 1;
+      } 
       return readBus(bus, (highByte << 8) + lowByte + cpu->y);
 
     case zeroPage:
@@ -1947,6 +1953,13 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       zeroPageAddr = readBus(bus, ++cpu->pc); 
       lowByte = readBus(bus, zeroPageAddr);
       highByte = readBus(bus, ++zeroPageAddr);
+      currPage = ((highByte << 8) | lowByte) & 0xff00;
+      newPage = (((highByte << 8) | lowByte) + cpu->y) & 0xff00;
+      if(currPage == newPage){
+        pageFlag = 0;
+      } else {
+        pageFlag = 1;
+      }
       return readBus(bus, ((highByte << 8) | lowByte) + cpu->y);
     default:
       halt(cpu);

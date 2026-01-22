@@ -720,8 +720,8 @@ void startNes(char* romPath, int screenScaling){
       }
 
       // allocate two nametables
-      initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x400, Rom, TRUE);
-      initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Rom, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x400, Ram, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Ram, TRUE);
       
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
@@ -767,8 +767,8 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x2000, Rom, TRUE);
       }
       // allocate the two nametables at the end
-      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms]), 0x400, Rom, TRUE);
-      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms + 1]), 0x400, Rom, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms]), 0x400, Ram, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms + 1]), 0x400, Ram, TRUE);
       for(int i = 0; i < numOfPrgRoms; ++i){
         for(int j = 0; j < 0x4000; ++j){
           bus.memArr[i + 1].contents[j] = fgetc(romPtr);
@@ -803,14 +803,45 @@ void startNes(char* romPath, int screenScaling){
       break;
     case 7:
       printf("numofprgroms %x \n", numOfPrgRoms);
+      printf("numofchrroms %d \n", numOfChrRoms);
       initBus(&bus, numOfPrgRoms + 1);
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
-      for(int i = 1; i <= (numOfPrgRoms + 1) / 2; ++i){
+
+
+      for(int i = 1; i < (numOfPrgRoms / 2) + 1; ++i){
         initMemStruct(&(bus.memArr[i]), 0x8000, Rom, TRUE);
       }
-
-      initPpu(bus.ppu, numOfChrRoms);
+      initPpu(bus.ppu, 3);
+      initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x400, Ram, TRUE);
+      initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Ram, TRUE);
       populatePalette(bus.ppu);
+
+      for(int j = 0; j < numOfPrgRoms / 2; ++j){
+        for(int i = 0; i < 2; ++i){
+          for(int k = 0; k < 0x4000; ++k){
+            if(i == 0){
+              bus.memArr[j + 1].contents[k] = fgetc(romPtr);
+            } else {
+              bus.memArr[j + 1].contents[k + 0x4000] = fgetc(romPtr);
+            }
+          }
+        }
+      }
+      reset(bus.cpu, &bus);
+      resetPpu(bus.ppu, 1);
+      bus.ppu->mapper = bus.mapper;
+
+      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("error initializing SDL: %s\n", SDL_GetError());
+      }
+
+      SDL_RenderClear(renderer);
+      SDL_RenderPresent(renderer);
+      printf("SDL initialized! \n");
+  
+      bus.ppu->mirroring = mirroring;
+      nesMainLoop(&bus, renderer, texture, screenScaling);
 
       break;
     default:
