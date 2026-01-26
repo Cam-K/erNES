@@ -22,6 +22,7 @@
 
 
 #include "memory.h"
+#include "cpu.h"
 #include "general.h"
 #include "ppu.h"
 
@@ -581,24 +582,42 @@ uint8_t readBus(Bus* bus, uint16_t addr){
             // if bit 2 and 3 equals 2
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1000){
             printf("16 kb first bank fixed mode \n");
+            // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the first fixed bank
+            uint8_t suRomMemArrOffset = 0;
+            if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
+              if(getBit(bus->mmc1.chrBank0.reg, 4) != 0){
+                suRomMemArrOffset = 16;
+              }
+            } 
            if(addr <= 0xbfff){
             // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
             // prgram is present or not.
-              return bus->memArr[(1 + (bus->presenceOfPrgRam))].contents[addr - 0x8000];
+              return bus->memArr[(1 + bus->presenceOfPrgRam + suRomMemArrOffset)].contents[addr - 0x8000];
             } else if(addr >= 0xc000){
               // + 2 because this is the offset into memArr, after the initial RAM bank at 0x0000-0x07ff and the first, 16kb fixed bank
               return bus->memArr[((prgBankTemp.reg & maskForPrgBank) + bus->presenceOfPrgRam + 2)].contents[addr - 0xc000]; 
             }
             // if bit 2 and bit 3 equals 3
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1100){
-           //printf("16 kb last bank fixed mode \n");
+            // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the last fixed bank
+            uint8_t suRomMemArrOffset = 0;
+
+            // TODO: implement outer block for last fixed PRG-ROM bank
+            if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
+              if((getBit(bus->mmc1.chrBank0.reg, 4) == 0)){
+                //printf("selecting block 1 \n");
+                suRomMemArrOffset = 16;
+              } else {
+                suRomMemArrOffset = 0;
+                //printf("selecting block 2 \n");
+              }
+            } 
            if(addr <= 0xbfff){
             // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
             // prgram is present or not.
               return bus->memArr[((prgBankTemp.reg & maskForPrgBank) + bus->presenceOfPrgRam + 1)].contents[addr - 0x8000];
             } else if(addr >= 0xc000){
-            
-              return bus->memArr[bus->numOfBlocks - 1].contents[addr - 0xc000]; 
+              return bus->memArr[(bus->numOfBlocks - 1) - suRomMemArrOffset].contents[addr - 0xc000]; 
             }
             
           }
