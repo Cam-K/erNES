@@ -584,7 +584,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
             }
             // if bit 2 and bit 3 equals 3
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1100){
-           //printf("16 kb last bank fixed mode \n");
+           printf("16 kb last bank fixed mode \n");
            if(addr <= 0xbfff){
             // 1 + bus->presenceofprgram because we need an offset of either 0 or 1 from this variable when determining whether
             // prgram is present or not.
@@ -1201,8 +1201,9 @@ uint8_t select256Bank(Bus* bus){
       // check if it is an SUROM game
       if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
 
+        printf("surom game \n");
         maskForPrgBank = 0b11110;
-        if(getBit(bus->mmc1.control.reg, 4) != 0){
+        if(getBit(bus->mmc1.chrBank0.reg, 4) != 0){
           bus->mmc1.prgBank.reg = setBit(bus->mmc1.prgBank.reg, 4);
         } else {
           bus->mmc1.prgBank.reg = clearBit(bus->mmc1.prgBank.reg, 4);
@@ -1215,9 +1216,8 @@ uint8_t select256Bank(Bus* bus){
       // check for 16kb mode
     } else {
       if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
-
         maskForPrgBank = 0b11111;
-        if(getBit(bus->mmc1.control.reg, 4) != 0){
+        if(getBit(bus->mmc1.chrBank0.reg, 4) != 0){
           bus->mmc1.prgBank.reg = setBit(bus->mmc1.prgBank.reg, 4);
         } else {
           bus->mmc1.prgBank.reg = clearBit(bus->mmc1.prgBank.reg, 4);
