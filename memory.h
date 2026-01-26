@@ -165,6 +165,6 @@ void initMmc1(MMC1*);
 uint8_t readPpuBus(PPU*, uint16_t);
 void writePpuBus(PPU*, uint16_t, uint8_t);
 
-uint8_t select256Bank(Bus*);
+uint8_t findPrgBankMask(Bus*, MMC1Register*);
 
 //#endif
