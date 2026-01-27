@@ -1,6 +1,6 @@
 /*
 
-    nesemu, a Nintendo Entertainment System emulator
+    ernes, a Nintendo Entertainment System emulator
     Copyright (C) 2026  Cameron Kelly
 
     This program is free software: you can redistribute it and/or modify

@@ -1,6 +1,6 @@
 /*
 
-    nesemu, a Nintendo Entertainment System emulator
+    ernes, a Nintendo Entertainment System emulator
     Copyright (C) 2026  Cameron Kelly
 
     This program is free software: you can redistribute it and/or modify
@@ -88,6 +88,7 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->xScroll = 0;
   ppu->yScroll = 0;
   ppu->scanLine = 0;
+  ppu->dotx = 0;
   ppu->frames = 0;
 
   ppu->xregister = 0;
@@ -318,6 +319,13 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
 
 }
 
+
+
+// TODO: implement dot based renderer
+void tickPpu(Bus* bus){
+  
+
+}
 // renderScanline()
 //   renders a scanline with the given registers 
 //   inputs:

@@ -1,6 +1,6 @@
 /*
 
-    nesemu, a Nintendo Entertainment System emulator
+    ernes, a Nintendo Entertainment System emulator
     Copyright (C) 2026  Cameron Kelly
 
     This program is free software: you can redistribute it and/or modify
@@ -881,20 +881,34 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       const double target_frame_time = 1000.0 / target_fps;
       int mouseX;
       int mouseY;
+      int currCycles;
 
 
 
       // enter main loop
       while(1){
       // mark time at the start of the frame being drawn
- 
+      // TODO: implement dot based renderer
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           oppCode = readBus(bus, bus->cpu->pc);
-          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
+          currCycles = decodeAndExecute(bus->cpu, bus, oppCode);
+          bus->cpu->cycles += currCycles;
+
+
+          // TODO: implement dot based renderer
+          // for every cpu cycle, tick the PPU 3 times
+          /*
+          for(int i = 0; i < currCycles; ++i){
+            tickPpu(bus);
+            tickPpu(bus);
+            tickPpu(bus);
+          }*/
+
 
           //printf("cycles total: %d \n", bus.cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
           // render a scanline except while in vblank and during the prerender scanline (261)
+
           if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
             renderScanline(bus->ppu);
           }
@@ -1029,12 +1043,11 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                 }
               }
 
-
+              bus->ppu->frames++;
             }
 
             bus->ppu->scanLine++;
             bus->ppu->scanLineSprites++;
-            bus->ppu->frames++;
 
             bus->cpu->cycles = 0;
 

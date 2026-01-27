@@ -1,6 +1,6 @@
 /*
 
-    nesemu, a Nintendo Entertainment System emulator
+    ernes, a Nintendo Entertainment System emulator
     Copyright (C) 2026  Cameron Kelly
 
     This program is free software: you can redistribute it and/or modify
@@ -81,6 +81,7 @@ typedef struct _PPU {
   // 3 - one screen, upper bank
   int mirroring;
   
+  int dotx;
   int scanLine;
 
   // separate scanline variable for sprites because sprites are delayed by one scanline
@@ -208,3 +209,5 @@ void fillTempV(uint16_t*, struct VComponent);
 void copyMmc1(MMC1*, MMC1*);
 
 void prerenderScanline(Bus*);
+
+void tickPpu(Bus*);
