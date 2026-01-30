@@ -108,6 +108,10 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->hblank = 0;
   ppu->flagChrRam = 0;
 
+  ppu->attritebuteDataLatch = 0;
+  ppu->nameTableByteLatch = 0;
+  ppu->bitPlaneHiLatch = 0;
+  ppu->bitPlaneLoLatch = 0;
   
   
 
@@ -319,13 +323,190 @@ int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
 
 }
 
-
+#define TICKPPUDEBUG 0
 
 // TODO: implement dot based renderer
 void tickPpu(Bus* bus){
+  uint16_t tempV;
+  uint16_t patternTableOffset = 0;
+  uint16_t currentAttributeData;
+  uint16_t currentAttributeDataLo;
+  uint16_t currentAttributeDataHi;
+  uint8_t tempPalette[4];
+  uint16_t bitLo_16;
+  uint16_t bitHi_16;
+  uint8_t bitsCombined;
+  if(bus->ppu->dotx == 0){
+    //printf("scanline %d \n", bus->ppu->scanLine);
+  }
+  //printf("dotx %d \n", bus->ppu->dotx);
+
+  // excludes the fineY component so that V can be used in our equations
+  fillTempV(&tempV, bus->ppu->vregister.vcomp);
   
+  if(bus->ppu->dotx == 0){
+    bus->ppu->bitPlane1 <<= 1;
+    bus->ppu->bitPlane2 <<= 1;
+    bus->ppu->attributeData1 <<= 1;
+    bus->ppu->attributeData2 <<= 1;
+
+  }
+  
+  if(getBit(bus->ppu->mask, 3) != 0){
+    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || (bus->ppu->scanLine == 261)){
+      if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
+        if(bus->ppu->dotx % 8 == 1){
+          //printf("\t fetching nametable byte at %x \n", 0x2000 + tempV);
+          bus->ppu->nameTableByteLatch = readPpuBus(bus->ppu, 0x2000 + tempV);
+
+        } else if(bus->ppu->dotx % 8 == 3){
+           // printf("\t fetching attribute data at %x \n", 0x23c0 | (tempV & 0x0c00) | ((tempV >> 4) & 0x38) | ((tempV >> 2) & 0x07));
+            bus->ppu->attritebuteDataLatch = readPpuBus(bus->ppu, 0x23c0 | (tempV & 0x0c00) | ((tempV >> 4) & 0x38) | ((tempV >> 2) & 0x07));
+
+            // finds which quadrant V resides in and returns the appropriate 2-bit number from the byte
+            bus->ppu->attritebuteDataLatch = findAndReturnAttributeByte(tempV,  bus->ppu->attritebuteDataLatch);
+
+        } else if(bus->ppu->dotx % 8 == 5){
+          //printf("\t fetching pattern tile lo byte \n");
+          // fetch pattern table tile lo byte
+          if(getBit(bus->ppu->ctrl, 4) == 0){
+            patternTableOffset = 0;
+          } else if (getBit(bus->ppu->ctrl, 4) != 0){
+            patternTableOffset = 0x1000;
+          }
+          bus->ppu->bitPlaneLoLatch = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->nameTableByteLatch << 4) + bus->ppu->vregister.vcomp.fineY);
+        } else if(bus->ppu->dotx % 8 == 7){
+         // printf("\t fetching pattern tile hi byte \n");
+          if(getBit(bus->ppu->ctrl, 4) == 0){
+            patternTableOffset = 0;
+          } else if (getBit(bus->ppu->ctrl, 4) != 0){
+            patternTableOffset = 0x1000;
+          }
+          bus->ppu->bitPlaneHiLatch = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->nameTableByteLatch << 4) + bus->ppu->vregister.vcomp.fineY + 8);
+          //printf("\t latching hi bits %x \n", bus->ppu->bitPlaneHiLatch);
+        } else if(bus->ppu->dotx % 8 == 0){
+          //printf("\t incrementing course x \n");        
+          // copies it 8 times into the attribute table buffer (shift register)
+          // account for unused tile fetch (occurs from dots 249-255), do not latch the contents of this
+          if(bus->ppu->dotx != 256){
+           // printf("\t transferring data into shift registers for nametable tile %x \n", 0x2000 + tempV);
+            for(int k = 0; k < 8; ++k){
+              if(getBit(bus->ppu->attritebuteDataLatch , 0) == 1){
+                bus->ppu->attributeData1 = setBit16bit(bus->ppu->attributeData1, k);
+              } else if(getBit(bus->ppu->attritebuteDataLatch, 0) == 0){
+                bus->ppu->attributeData1 = clearBit16bit(bus->ppu->attributeData1, k);
+              }
+
+              if(getBit(bus->ppu->attritebuteDataLatch , 1) == 0b10){
+                bus->ppu->attributeData2 = setBit16bit(bus->ppu->attributeData2, k);
+              } else if(getBit(bus->ppu->attritebuteDataLatch, 1) == 0){
+                bus->ppu->attributeData2 = clearBit16bit(bus->ppu->attributeData2, k);
+              }
+
+            }
+            bus->ppu->bitPlane1 = bus->ppu->bitPlane1 | (uint16_t)bus->ppu->bitPlaneLoLatch;
+            bus->ppu->bitPlane2 = bus->ppu->bitPlane2 | (uint16_t)bus->ppu->bitPlaneHiLatch;
+          }
+          if(bus->ppu->dotx == 328){
+            //printf("\t shifting shift registers 8 times bitplane \n");
+            bus->ppu->bitPlane1 <<= 8;
+            bus->ppu->bitPlane2 <<= 8;
+          }
+
+          incrementCourseX(bus->ppu);
+        } 
+      }
+    }
+    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239){
+      if(bus->ppu->dotx == 256){
+      // printf("\t incrementing y \n");
+        incrementY(bus->ppu);
+
+      } else if(bus->ppu->dotx == 257){
+      // printf("\t hori(v) = hori(t) \n");
+        // if background rendering is enabled, increment v
+
+          // hori(v) = hori(t)
+        bus->ppu->vregister.vcomp.courseX = bus->ppu->tregister.vcomp.courseX;
+        bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 1) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 0);
+        
+
+      } 
+    }
+    
+    
+    if(bus->ppu->scanLine == 261 && bus->ppu->dotx >= 280 && bus->ppu->dotx <= 304){
+      // vert(v) = vert(t)
+      // copy all y components from t to v
+    // printf("vert(v) = vert(t) \n");
+      bus->ppu->vregister.vcomp.courseY = bus->ppu->tregister.vcomp.courseY;
+      bus->ppu->vregister.vcomp.fineY = bus->ppu->tregister.vcomp.fineY;
+      bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 0) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 1);
+
+    }
+    
+    
+    // each tick produces one pixel
+    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 240 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+      //  printf("\tdrawing a pixel \n");
+    
+        // fetch data from shift registers for the current pixel
+        currentAttributeDataLo = 0;
+        currentAttributeDataLo = (getBitFromLeft16bit(bus->ppu->attributeData1, bus->ppu->xregister));
+        currentAttributeDataLo = currentAttributeDataLo >> findBit16bit(currentAttributeDataLo);
+        
+        currentAttributeDataHi = 0;
+        currentAttributeDataHi = (getBitFromLeft16bit(bus->ppu->attributeData2, bus->ppu->xregister));
+        currentAttributeDataHi = currentAttributeDataHi >> findBit16bit(currentAttributeDataHi);
+        currentAttributeDataHi = currentAttributeDataHi << 1;
+        
+
+        currentAttributeData = currentAttributeDataLo | currentAttributeDataHi;
+
+        // $3f00 is hard-wired to be the backdrop color
+        tempPalette[0] = readPpuBus(bus->ppu, 0x3f00 + 0);
+        tempPalette[1] = readPpuBus(bus->ppu, 0x3f00 + 1 + (currentAttributeData) * 4);
+        tempPalette[2] = readPpuBus(bus->ppu, 0x3f00 + 2 + (currentAttributeData) * 4);
+        tempPalette[3] = readPpuBus(bus->ppu, 0x3f00 + 3 + (currentAttributeData) * 4);
+
+
+        // shift the shift registers
+        bus->ppu->attributeData1 = bus->ppu->attributeData1 << 1;
+        bus->ppu->attributeData2 = bus->ppu->attributeData2 << 1;
+
+
+        // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
+        bitLo_16 = getBitFromLeft16bit(bus->ppu->bitPlane1, bus->ppu->xregister);
+        bitHi_16 = getBitFromLeft16bit(bus->ppu->bitPlane2, bus->ppu->xregister);
+        bitLo_16 = bitLo_16 >> findBit16bit(bitLo_16);
+        bitHi_16 = bitHi_16 >> findBit16bit(bitHi_16);
+        bitHi_16 = bitHi_16 << 1;
+        bitsCombined = bitLo_16 | bitHi_16;
+
+        // find 24Bit rgb value and set the current pixel value to this
+        bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[tempPalette[bitsCombined]];
+       // printf("\t shifter value while drawing pixel Lo: %x Hi: %x \n", bus->ppu->bitPlane1, bus->ppu->bitPlane2);
+
+        // shift the shift registers
+        bus->ppu->bitPlane1 = bus->ppu->bitPlane1 << 1;
+        bus->ppu->bitPlane2 = bus->ppu->bitPlane2 << 1;
+    }
+
+    bus->ppu->dotx++;
+    
+  }
+  
+  if(getBit(bus->ppu->mask, 4) != 0){
+
+    // clear secondary OAM
+    if(bus->ppu->dotx >= 1 && bus->ppu->dotx <= 64){
+      bus->ppu->secondaryOAM[(bus->ppu->dotx - 1) % 32] = 0xff;
+    }
+
+  }
 
 }
+
 // renderScanline()
 //   renders a scanline with the given registers 
 //   inputs:
@@ -333,7 +514,6 @@ void tickPpu(Bus* bus){
 //
 
 void renderScanline(PPU* ppu){
-
   uint8_t attributeTableByte;
   uint16_t patternTableIndice;
   uint8_t bitPlane1 = 0;

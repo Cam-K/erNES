@@ -139,6 +139,13 @@ typedef struct _PPU {
   uint16_t attributeData2;
 
 
+  // latches that transfer into the appropriate shift registers every 8 PPU cycles
+  uint8_t nameTableByteLatch;
+  uint8_t attritebuteDataLatch;
+  uint8_t bitPlaneLoLatch;
+  uint8_t bitPlaneHiLatch;
+
+
   // variable to track whether the nes is in vertical blanking or not
   int vblank;
 
@@ -168,6 +175,11 @@ typedef struct _PPU {
   // a copy of the MMC1 registers from the Bus struct, stored here so that
   // they can be accessed in functions that only pass a PPU* pointer
   MMC1 mmc1Copy;
+
+  // used to store the results of a sprite evaluation
+  uint8_t oamIndices[9];
+
+  uint8_t secondaryOAM[32];
 
 } PPU;
 

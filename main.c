@@ -149,7 +149,7 @@ int main(int argc, char* argv[]){
 
 
   FILE* fptr;
-  printf("    nesemu  Copyright (C) 2026  Cameron Kelly \n This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n This is free software, and you are welcome to redistribute it \n under certain conditions; type `show c' for details. \n");
+  printf("    ernes  Copyright (C) 2026  Cameron Kelly \n This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n This is free software, and you are welcome to redistribute it \n under certain conditions; type `show c' for details. \n");
 
   // parsing command line arguments
   if(argc > 1){
@@ -897,166 +897,168 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
 
           // TODO: implement dot based renderer
           // for every cpu cycle, tick the PPU 3 times
-          /*
           for(int i = 0; i < currCycles; ++i){
             tickPpu(bus);
             tickPpu(bus);
             tickPpu(bus);
-          }*/
-
-
-          //printf("cycles total: %d \n", bus.cpu->cycles);
+          }
+          //printf("cycles total: %d \n", bus->cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
           // render a scanline except while in vblank and during the prerender scanline (261)
-
           if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
-            renderScanline(bus->ppu);
+          //  renderScanline(bus->ppu);
           }
+
+          //printf("scanlines %d \n", bus->ppu->scanLine);
 
 
           if(bus->ppu->scanLine == 0){
             frame_start = SDL_GetPerformanceCounter();
 
           }
+          
+          if(bus->ppu->scanLine == 240){
+  
+            vblankStart(bus);
+            drawFrameBuffer(bus->ppu, renderer, texture);
+
             
-            if(bus->ppu->scanLine == 240){
-   
-              vblankStart(bus);
-              drawFrameBuffer(bus->ppu, renderer, texture);
- 
-              
-              //printNameTable(bus);
-            } else if(bus->ppu->scanLine == 260){
-              vblankEnd(bus);
+            //printNameTable(bus);
+          } else if(bus->ppu->scanLine == 260){
+            vblankEnd(bus);
 
-            } else if(bus->ppu->scanLine == 261){
-              prerenderScanline(bus);
-              
-              // after prerenderscanline, mark the end of the frame, then delay until the next frame is drawn
-              frame_end = SDL_GetPerformanceCounter();
-              elasped_ms = (frame_end - frame_start) * 1000.0 / freq;
-              if(elasped_ms < target_frame_time){
-                SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
-              }
-
-              sdlFrames++;
-              if(fps_lastTime < SDL_GetTicks() - 1000){
-                fps_lastTime = SDL_GetTicks();
-                fps_current = sdlFrames;
-                sdlFrames = 0;
-                if(fps_current != 1){
-                  printf("fps: %d \n", fps_current);
-                }
-
-              }
-            if(processLightGunInput >= 1 && processLightGunInput <= 2){
-              printf("frame processed %d \n", bus->ppu->frames);
-              printf("%x \n", bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling]);
-              if(bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffffff || bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffc6c3){
-                bus->controller2.lightSensor = 0;
-                processLightGunInput = 0;
-                printf("detected! \n");
-    
-              } else {
-                bus->controller2.lightSensor = 1;
-                processLightGunInput++;
-              }
+          } else if(bus->ppu->scanLine == 261){
+            prerenderScanline(bus);
+            
+            // after prerenderscanline, mark the end of the frame, then delay until the next frame is drawn
+            frame_end = SDL_GetPerformanceCounter();
+            elasped_ms = (frame_end - frame_start) * 1000.0 / freq;
+            if(elasped_ms < target_frame_time){
+              SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
             }
 
-          // polls for events at the end of each prerender scanline (once per frame)
-          while (SDL_PollEvent(&event)) {
-              switch (event.type) {
-                case SDL_QUIT:
-                  SDL_Quit(); 
-                  freeAndExit(bus);
-                  break;
-              
-                case SDL_KEYDOWN:
-                  switch(event.key.keysym.sym){
-                    case SDLK_x:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 0);
-                      break;
-                    case SDLK_z:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 1);
-                      break;
-                    case SDLK_RSHIFT:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 2);
-                      break;
-                    case SDLK_RETURN:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 3);
-                      break;
-                    case SDLK_UP:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 4);
-                      break;
-                    case SDLK_DOWN:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 5);
-                      break;
-                    case SDLK_LEFT:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 6);
-                      break;
-                    case SDLK_RIGHT:
-                      bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
-                      break;
+            sdlFrames++;
+            if(fps_lastTime < SDL_GetTicks() - 1000){
+              fps_lastTime = SDL_GetTicks();
+              fps_current = sdlFrames;
+              sdlFrames = 0;
+              if(fps_current != 1){
+                printf("fps: %d \n", fps_current);
+              }
 
-                  }
-                  break;
-                case SDL_KEYUP:
-                  switch(event.key.keysym.sym){
-                    case SDLK_x:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 0);
-                      break;
-                    case SDLK_z:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 1);
-                      break;
-                    case SDLK_RSHIFT:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 2);
-                      break;
-                    case SDLK_RETURN:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 3);
-                      break;
-                    case SDLK_UP:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 4);
-                      break;
-                    case SDLK_DOWN:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 5);
-                      break;
-                    case SDLK_LEFT:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
-                      break;                  
+            }
+          if(processLightGunInput >= 1 && processLightGunInput <= 2){
+            printf("frame processed %d \n", bus->ppu->frames);
+            printf("%x \n", bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling]);
+            if(bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffffff || bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffc6c3){
+              bus->controller2.lightSensor = 0;
+              processLightGunInput = 0;
+              printf("detected! \n");
+  
+            } else {
+              bus->controller2.lightSensor = 1;
+              processLightGunInput++;
+            }
+          }
 
-                    case SDLK_RIGHT:
-                      bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
-                      break;
-                  }
-                  break;
-                  case SDL_MOUSEBUTTONDOWN:
-                    processLightGunInput = 1;
-                    mouseX = event.motion.x;
-                    mouseY = event.motion.y;
-                    printf("frame received %d \n", bus->ppu->frames);
-                    bus->controller2.triggerPulled = 1;
+        // polls for events at the end of each prerender scanline (once per frame)
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+              case SDL_QUIT:
+                SDL_Quit(); 
+                freeAndExit(bus);
+                break;
+            
+              case SDL_KEYDOWN:
+                switch(event.key.keysym.sym){
+                  case SDLK_x:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 0);
                     break;
-                    
-                  case SDL_MOUSEBUTTONUP:
-                    bus->controller2.triggerPulled = 0;
+                  case SDLK_z:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 1);
+                    break;
+                  case SDLK_RSHIFT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 2);
+                    break;
+                  case SDLK_RETURN:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 3);
+                    break;
+                  case SDLK_UP:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 4);
+                    break;
+                  case SDLK_DOWN:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 5);
+                    break;
+                  case SDLK_LEFT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 6);
+                    break;
+                  case SDLK_RIGHT:
+                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
+                    break;
+
+                }
+                break;
+              case SDL_KEYUP:
+                switch(event.key.keysym.sym){
+                  case SDLK_x:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 0);
+                    break;
+                  case SDLK_z:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 1);
+                    break;
+                  case SDLK_RSHIFT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 2);
+                    break;
+                  case SDLK_RETURN:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 3);
+                    break;
+                  case SDLK_UP:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 4);
+                    break;
+                  case SDLK_DOWN:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 5);
+                    break;
+                  case SDLK_LEFT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
+                    break;                  
+
+                  case SDLK_RIGHT:
+                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
                     break;
                 }
+                break;
+                case SDL_MOUSEBUTTONDOWN:
+                  processLightGunInput = 1;
+                  mouseX = event.motion.x;
+                  mouseY = event.motion.y;
+                  printf("frame received %d \n", bus->ppu->frames);
+                  bus->controller2.triggerPulled = 1;
+                  break;
+                  
+                case SDL_MOUSEBUTTONUP:
+                  bus->controller2.triggerPulled = 0;
+                  break;
               }
-
-              bus->ppu->frames++;
             }
 
-            bus->ppu->scanLine++;
-            bus->ppu->scanLineSprites++;
+            bus->ppu->frames++;
+          }
 
-            bus->cpu->cycles = 0;
+          bus->ppu->scanLine++;
+          bus->ppu->scanLineSprites++;
+          bus->ppu->dotx = 0;
 
-            if(bus->ppu->scanLine == 262){
-              bus->ppu->scanLine = 0;
-              bus->ppu->scanLineSprites = -1;
-            }
+          bus->cpu->cycles = 0;
 
-        }
+          if(bus->ppu->scanLine == 262){
+            bus->ppu->scanLine = 0;
+            bus->ppu->scanLineSprites = -1;
+          }
+          if(bus->ppu->frames >= 30){
+           // freeAndExit(bus);
+          }
+
+      }
         
 
  

@@ -235,6 +235,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
           bus->ppu->vregister.vreg = bus->ppu->tregister.vreg;
           bus->ppu->wregister = 0;
         }
+
         
         break;
       case 0x2007:
@@ -717,7 +718,7 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
           if(ppu->ppubus->numOfBlocks == 4){
             // for SNROM Games
             temp.reg = temp.reg & 0b1111;
-          }
+          } 
            if(addr <= 0xfff){
              return ppu->ppubus->memArr[temp.reg & 0b11110].contents[addr];
            } else if(addr >= 0x1000){
