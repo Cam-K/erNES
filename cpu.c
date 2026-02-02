@@ -55,10 +55,10 @@ void triggerNmi(CPU* cpu){
   cpu->nmiInterruptFlag = 1;
 }
 
-void checkForInterrupts(CPU* cpu, Bus* bus){
-  if(cpu->nmiInterruptFlag == 1){
-    nmi(cpu, bus);
-    cpu->nmiInterruptFlag = 0;
+void checkForInterrupts(Bus* bus){
+  if(bus->cpu->nmiInterruptFlag == 1){
+    nmi(bus->cpu, bus);
+    bus->cpu->nmiInterruptFlag = 0;
   } 
 }
 
@@ -70,7 +70,7 @@ void checkForInterrupts(CPU* cpu, Bus* bus){
 //
 //
 int nmi(CPU* cpu, Bus* bus){
-  //printf("NMI triggered! \n");
+  printf("NMI triggered! \n");
 
   uint16_t temp;
   //printf("cpu->pc at nmi %x \n", cpu->pc);

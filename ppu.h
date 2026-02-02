@@ -60,6 +60,42 @@ union VRegister {
 
 };
 
+typedef struct _SecondaryOAM {
+  uint8_t data[32];
+
+  // amount of sprites found from sprite evaluation
+  int spriteCounter;
+
+} SecondaryOAM;
+
+typedef struct _OamIndices{
+  unsigned int n : 5;
+  unsigned int m : 2;
+
+} OAMIndices;
+
+typedef struct _SpriteShifter{
+
+  uint8_t xCoordinate;
+  uint8_t bitPlaneLo;
+  uint8_t bitPlaneHi;
+  int bgPriorityFlag;
+  uint8_t attributeData;
+  int counter;
+
+
+} SpriteShifter;
+
+typedef struct _SpriteLatches{
+  uint8_t yCoordinate;
+  uint8_t tileNumber;
+  uint8_t attributeData;
+  uint8_t xCoordinate;
+  uint8_t bitPlaneLo;
+  uint8_t bitPlaneHi;
+
+} SpriteLatch;
+
 typedef struct _PPU {
 
   // internal ppu registers
@@ -101,6 +137,9 @@ typedef struct _PPU {
   // should be initialized as [256]
   // used for sprites
   uint8_t* oam;
+
+  // used to index into OAM
+  OAMIndices oamIndex;
 
 
   PPUBus* ppubus;
@@ -177,9 +216,19 @@ typedef struct _PPU {
   MMC1 mmc1Copy;
 
   // used to store the results of a sprite evaluation
-  uint8_t oamIndices[9];
+  SecondaryOAM secondaryOam;
+  SpriteShifter spriteShifters[8];
 
-  uint8_t secondaryOAM[32];
+  // latch used to transfer data from secondaryOam to spriteShifters, ready for rendering on the next scanline
+  SpriteLatch spriteLatch;
+  int spriteLatchCounter;
+
+
+
+  // state machine for keeping track of sprite evaluation step (used in multiple places)
+  int spriteEvaluationStateMachine;
+
+
 
 } PPU;
 

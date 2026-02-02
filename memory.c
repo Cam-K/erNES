@@ -405,6 +405,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 
   }
   if(addr >= 0 && addr <= 0x07ff){
+
     return bus->memArr[0].contents[addr];
   } else if(addr >= 0x0800 && addr <= 0x0fff){
     return bus->memArr[0].contents[addr - 0x800];

@@ -538,10 +538,16 @@ void startNes(char* romPath, int screenScaling){
       initMemStruct(&(bus.memArr[1]), 0x8000, Rom, TRUE);
 
 
-      // + 2 because we have CHR-ROM/RAM plus the two nametables we have to allocate.
-      initPpu(bus.ppu, numOfChrRoms + 2);
+      // + 2 because we have the two nametables we have to allocate.
+      if(numOfChrRoms == 0){
+        // account for CHR-RAM
+        initPpu(bus.ppu, 3);
+      } else {
+        initPpu(bus.ppu, numOfChrRoms + 2);
+      }
       printf("%d \n", numOfChrRoms + 2);
       populatePalette(bus.ppu);
+      printf("numofchrroms %d \n", numOfChrRoms);
       
       
 
@@ -555,6 +561,8 @@ void startNes(char* romPath, int screenScaling){
           bus.memArr[1].contents[i] = fgetc(romPtr);
         }
       }
+
+      
       if(numOfChrRoms == 0){
 
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
@@ -890,18 +898,18 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       // mark time at the start of the frame being drawn
       // TODO: implement dot based renderer
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
+          checkForInterrupts(bus);
           oppCode = readBus(bus, bus->cpu->pc);
           currCycles = decodeAndExecute(bus->cpu, bus, oppCode);
           bus->cpu->cycles += currCycles;
 
-
-          // TODO: implement dot based renderer
           // for every cpu cycle, tick the PPU 3 times
           for(int i = 0; i < currCycles; ++i){
             tickPpu(bus);
             tickPpu(bus);
             tickPpu(bus);
           }
+         
           //printf("cycles total: %d \n", bus->cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
           // render a scanline except while in vblank and during the prerender scanline (261)
@@ -929,7 +937,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
 
           } else if(bus->ppu->scanLine == 261){
             prerenderScanline(bus);
-            
+
             // after prerenderscanline, mark the end of the frame, then delay until the next frame is drawn
             frame_end = SDL_GetPerformanceCounter();
             elasped_ms = (frame_end - frame_start) * 1000.0 / freq;
@@ -1054,8 +1062,8 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
             bus->ppu->scanLine = 0;
             bus->ppu->scanLineSprites = -1;
           }
-          if(bus->ppu->frames >= 30){
-           // freeAndExit(bus);
+          if(bus->ppu->frames >= 20){
+            // freeAndExit(bus);
           }
 
       }

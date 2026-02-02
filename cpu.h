@@ -92,7 +92,7 @@ int brki(CPU*, Bus*);
 
 void triggerNmi(CPU*);
 
-void checkForInterrupts(CPU*, Bus*);
+void checkForInterrupts(Bus*);
 
 int decodeAndExecute(CPU*, Bus*, uint8_t);
 
