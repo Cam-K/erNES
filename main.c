@@ -891,6 +891,10 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       int mouseY;
       int currCycles;
 
+      uint8_t test = 0b11010101;
+      test <<= 20;
+      printf("test %d \n", test);
+
 
 
       // enter main loop

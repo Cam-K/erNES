@@ -81,7 +81,6 @@ typedef struct _SpriteShifter{
   uint8_t bitPlaneHi;
   int bgPriorityFlag;
   uint8_t attributeData;
-  int counter;
 
 
 } SpriteShifter;
@@ -224,6 +223,10 @@ typedef struct _PPU {
   int spriteLatchCounter;
 
 
+  // flag raised when the first entry in the sprite shifter corresponds to sprite zero in the OAM
+  int spriteZeroInRangeFlag;
+
+
 
   // state machine for keeping track of sprite evaluation step (used in multiple places)
   int spriteEvaluationStateMachine;
@@ -272,3 +275,5 @@ void copyMmc1(MMC1*, MMC1*);
 void prerenderScanline(Bus*);
 
 void tickPpu(Bus*);
+
+uint8_t parseSpriteShifter(PPU*, int);

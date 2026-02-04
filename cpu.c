@@ -70,7 +70,6 @@ void checkForInterrupts(Bus* bus){
 //
 //
 int nmi(CPU* cpu, Bus* bus){
-  printf("NMI triggered! \n");
 
   uint16_t temp;
   //printf("cpu->pc at nmi %x \n", cpu->pc);
