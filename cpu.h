@@ -66,6 +66,7 @@ typedef struct _CPU {
   
 
   int nmiInterruptFlag;
+  int irqInterruptFlag;
 
 }CPU;
 

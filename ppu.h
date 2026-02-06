@@ -69,7 +69,7 @@ typedef struct _SecondaryOAM {
 } SecondaryOAM;
 
 typedef struct _OamIndices{
-  unsigned int n : 5;
+  unsigned int n : 6;
   unsigned int m : 2;
 
 } OAMIndices;

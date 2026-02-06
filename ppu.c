@@ -135,6 +135,23 @@ void dmaTransfer(Bus* bus){
     addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
     bus->ppu->oam[i] = readBus(bus, addr);
   }
+  printf("dma transfer occured at scanline %d and dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
+  // if cpu cycles are even, tick the ppu 1539 times, else tick it 1542 times, which is the length of the DMA
+  /*
+  if(bus->cpu->cycles % 2 == 0){
+    for(int i = 0; i < 1539; ++i){
+      tickPpu(bus);
+    }
+  } else {
+    for(int i = 0; i < 1542; ++i){
+      tickPpu(bus);
+    }
+
+  }
+  */
+
+  printf("ending dma transfer at scanline %d and dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
+
   
 }
 
@@ -420,14 +437,6 @@ void tickPpu(Bus* bus){
 
         currentAttributeData = currentAttributeDataLo | currentAttributeDataHi;
 
-        // $3f00 is hard-wired to be the backdrop color
-        tempPalette[0] = readPpuBus(bus->ppu, 0x3f00 + 0);
-        tempPalette[1] = readPpuBus(bus->ppu, 0x3f00 + 1 + (currentAttributeData) * 4);
-        tempPalette[2] = readPpuBus(bus->ppu, 0x3f00 + 2 + (currentAttributeData) * 4);
-        tempPalette[3] = readPpuBus(bus->ppu, 0x3f00 + 3 + (currentAttributeData) * 4);
-
-
-  
 
         // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
         bitLo_16 = getBitFromLeft16bit(bus->ppu->bitPlane1, bus->ppu->xregister);
@@ -446,9 +455,15 @@ void tickPpu(Bus* bus){
 
       // iterate through sprite shifters, find first sprite shifter to not return zero
       // (Priority Mux)
+      finalSpritePixel = 0;
+      bitsCombined = 0;
       for(int i = 0; i < 8; ++i){
-          bitsCombined = parseSpriteShifter(bus->ppu, i);
-   
+          if(bitsCombined == 0){
+            bitsCombined = parseSpriteShifter(bus->ppu, i);
+          } else {
+            // needed to shift the sprite shifters after a non-zero bit has been found
+            parseSpriteShifter(bus->ppu, i);
+          }
        
             // sprite zero hit
           if(i == 0 && bus->ppu->spriteZeroInRangeFlag == 1){
@@ -456,11 +471,11 @@ void tickPpu(Bus* bus){
               bus->ppu->status = setBit(bus->ppu->status, 6);
             }
           }
-
-          if(bitsCombined != 0){
+          
+          // if the sprite pixel hasn't been found yet and one was just found
+          if(finalSpritePixel == 0 && bitsCombined != 0){
             finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
             spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
-            break;
 
           }
       }
@@ -470,10 +485,9 @@ void tickPpu(Bus* bus){
           bus->ppu->spriteShifters[i].xCoordinate--;
         }
       }
+      
 
-
-      // select between foreground or background sprite
-
+      // select between foreground or background sprite, or backdrop colour
 
 
       if((finalSpritePixel & 0b11) == 0){
@@ -490,6 +504,7 @@ void tickPpu(Bus* bus){
           if(spritePriority == 0){
             finalPixel = setBit(finalSpritePixel, 4);
           } else {
+            
             finalPixel = finalBackgroundPixel;
 
           }
@@ -642,7 +657,7 @@ void tickPpu(Bus* bus){
   
   // ****** Sprite Process ******
   if(getBit(bus->ppu->mask, 4) != 0){
-  
+    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239)){
     if(bus->ppu->dotx == 1){
       bus->ppu->oamIndex.m = 0;
       bus->ppu->oamIndex.n = 0;
@@ -688,8 +703,11 @@ void tickPpu(Bus* bus){
         bus->ppu->spriteEvaluationStateMachine = 1;
 
       } else if(bus->ppu->spriteEvaluationStateMachine == 1){
-
+      
         bus->ppu->oamIndex.n++;
+        if(bus->ppu->scanLine == 204){
+          printf("%x \n",bus->ppu->oamIndex.n);
+        }
       
         if(bus->ppu->oamIndex.n == 0){
           bus->ppu->spriteEvaluationStateMachine = 3;
@@ -698,7 +716,7 @@ void tickPpu(Bus* bus){
         } 
 
       } else if(bus->ppu->spriteEvaluationStateMachine == 2){
-        if(bus->ppu->oam[(bus->ppu->oamIndex.m * 4 + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[(bus->ppu->oamIndex.m * 4 + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
+        if(bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
           bus->ppu->status = setBit(bus->ppu->status, 5);
           // sprite overflow bug not implemented
           
@@ -709,7 +727,12 @@ void tickPpu(Bus* bus){
      
      
       if(bus->ppu->dotx == 256){
-        #if TICKPPUDEBUGLOG == 1
+        if(bus->ppu->secondaryOam.spriteCounter == 0){
+          bus->ppu->secondaryOam.data[0] = 0xff;
+
+        }
+
+        if(bus->ppu->scanLine == 204){
         printf("scanline %d \n", bus->ppu->scanLine);
         printf("secondary OAM \n");
         printf("   Y   Tile  Attr   X \n");
@@ -721,7 +744,17 @@ void tickPpu(Bus* bus){
         }
           printf(" \n");
         }
-       #endif
+        printf("OAM \n");
+        printf("   Y   Tile  Attr   X \n");
+        for(int i = 0; i < 64; ++i){
+        printf("%x ", i);
+        for(int j = 0; j < 4; ++j){
+          
+          printf(" %x ", bus->ppu->oam[(i * 4) + j]); 
+        }
+          printf(" \n");
+        }
+        }
       }
       
       
@@ -771,9 +804,12 @@ void tickPpu(Bus* bus){
         }
         // fetch bitplaneLo
         if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
+          if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+            bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
+          } else {
+            bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)));
 
-          bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
-        
+          }
         } else {
           bus->ppu->spriteLatch.bitPlaneLo = 0;
 
@@ -800,8 +836,12 @@ void tickPpu(Bus* bus){
           patternTableOffset = 0;
         }
         if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
+          if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+            bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
+          } else {
+            bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)) + 8));
 
-          bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
+          }
         } else {
           bus->ppu->spriteLatch.bitPlaneHi = 0;
 
@@ -829,6 +869,7 @@ void tickPpu(Bus* bus){
         bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].bitPlaneHi = bus->ppu->spriteLatch.bitPlaneHi;
         bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].attributeData = bus->ppu->spriteLatch.attributeData & 0b11;
         bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].bgPriorityFlag = (bus->ppu->spriteLatch.attributeData & 0b100000 >> 5);
+        
 
 
 
@@ -836,14 +877,13 @@ void tickPpu(Bus* bus){
         
       }
 
-
-#if TICKPPUDEBUGLOG == 1
+      if(bus->ppu->scanLine == 204){
       if(bus->ppu->dotx == 320){
         printf("sprite shifters \n");
-        printf("x Hi Lo \n");
+        printf("x Hi Lo BgPrior\n");
         for(int i = 0; i < (bus->ppu->spriteLatchCounter / 4); ++i){
           
-          printf("%x %x %x ", bus->ppu->spriteShifters[i].xCoordinate, bus->ppu->spriteShifters[i].bitPlaneHi, bus->ppu->spriteShifters[i].bitPlaneLo);
+          printf("%x %x %x %x ", bus->ppu->spriteShifters[i].xCoordinate, bus->ppu->spriteShifters[i].bitPlaneHi, bus->ppu->spriteShifters[i].bitPlaneLo, bus->ppu->spriteShifters[i].bgPriorityFlag);
      
           printf("\n");
 
@@ -852,12 +892,14 @@ void tickPpu(Bus* bus){
         }
 
       }
-      #endif
+      }
+   
 
     }
 
 
 
+    }
   }
   
   if(bus->ppu->scanLine == 261 && bus->ppu->dotx == 1){
