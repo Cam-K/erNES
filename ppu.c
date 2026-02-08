@@ -135,7 +135,8 @@ void dmaTransfer(Bus* bus){
     addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
     bus->ppu->oam[i] = readBus(bus, addr);
   }
-  printf("dma transfer occured at scanline %d and dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
+
+  // TODO: implement dotx overflow into scanline to make this work
   // if cpu cycles are even, tick the ppu 1539 times, else tick it 1542 times, which is the length of the DMA
   /*
   if(bus->cpu->cycles % 2 == 0){
@@ -150,7 +151,6 @@ void dmaTransfer(Bus* bus){
   }
   */
 
-  printf("ending dma transfer at scanline %d and dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
 
   
 }
@@ -657,6 +657,7 @@ void tickPpu(Bus* bus){
   
   // ****** Sprite Process ******
   if(getBit(bus->ppu->mask, 4) != 0){
+    
     if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239)){
     if(bus->ppu->dotx == 1){
       bus->ppu->oamIndex.m = 0;
@@ -705,10 +706,7 @@ void tickPpu(Bus* bus){
       } else if(bus->ppu->spriteEvaluationStateMachine == 1){
       
         bus->ppu->oamIndex.n++;
-        if(bus->ppu->scanLine == 204){
-          printf("%x \n",bus->ppu->oamIndex.n);
-        }
-      
+
         if(bus->ppu->oamIndex.n == 0){
           bus->ppu->spriteEvaluationStateMachine = 3;
         } else if(bus->ppu->secondaryOam.spriteCounter < 8){
@@ -718,7 +716,7 @@ void tickPpu(Bus* bus){
       } else if(bus->ppu->spriteEvaluationStateMachine == 2){
         if(bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
           bus->ppu->status = setBit(bus->ppu->status, 5);
-          // sprite overflow bug not implemented
+          // TODO: implement sprite overflow bug
           
         }
 
@@ -784,7 +782,11 @@ void tickPpu(Bus* bus){
 
 
         bus->ppu->spriteLatch.attributeData = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 2];
-    
+        if(bus->ppu->scanLine == 204){
+          printf("attributedata %x \n", bus->ppu->spriteLatch.attributeData);
+
+        }
+
 
 
       } else if(bus->ppu->dotx % 8 == 4){
@@ -864,16 +866,18 @@ void tickPpu(Bus* bus){
       } else if(bus->ppu->dotx % 8 == 0){
 
         // copy into sprite shifters
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].xCoordinate = bus->ppu->spriteLatch.xCoordinate;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].bitPlaneLo = bus->ppu->spriteLatch.bitPlaneLo;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].bitPlaneHi = bus->ppu->spriteLatch.bitPlaneHi;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].attributeData = bus->ppu->spriteLatch.attributeData & 0b11;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter / 4].bgPriorityFlag = (bus->ppu->spriteLatch.attributeData & 0b100000 >> 5);
+        // use >> 2 instead of / 4
+        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].xCoordinate = bus->ppu->spriteLatch.xCoordinate;
+        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneLo = bus->ppu->spriteLatch.bitPlaneLo;
+        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneHi = bus->ppu->spriteLatch.bitPlaneHi;
+        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].attributeData = bus->ppu->spriteLatch.attributeData & 0b11;
+        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bgPriorityFlag = ((bus->ppu->spriteLatch.attributeData & 0b100000) >> 5);
         
 
 
 
         bus->ppu->spriteLatchCounter += 4;
+        
         
       }
 
