@@ -4,7 +4,7 @@ A Nintendo Entertainment System emulator, written in C.
 
 ## Description
 
-A NES emulator using SDL2 as it's graphics library that is able to boot games such as Castlevania and Super Mario Bros.
+A NES emulator using SDL2 as it's graphics library that is able to boot games such as Mega Man 2 and Super Mario Bros.
 
 There is no APU imeplementation.
 
