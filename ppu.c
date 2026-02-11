@@ -730,29 +730,7 @@ void tickPpu(Bus* bus){
 
         }
 
-        if(bus->ppu->scanLine == 204){
-        printf("scanline %d \n", bus->ppu->scanLine);
-        printf("secondary OAM \n");
-        printf("   Y   Tile  Attr   X \n");
-        for(int i = 0; i < 8; ++i){
-        printf("%x ", i);
-        for(int j = 0; j < 4; ++j){
-          
-          printf(" %x ", bus->ppu->secondaryOam.data[(i * 4) + j]); 
-        }
-          printf(" \n");
-        }
-        printf("OAM \n");
-        printf("   Y   Tile  Attr   X \n");
-        for(int i = 0; i < 64; ++i){
-        printf("%x ", i);
-        for(int j = 0; j < 4; ++j){
-          
-          printf(" %x ", bus->ppu->oam[(i * 4) + j]); 
-        }
-          printf(" \n");
-        }
-        }
+
       }
       
       
@@ -782,10 +760,7 @@ void tickPpu(Bus* bus){
 
 
         bus->ppu->spriteLatch.attributeData = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 2];
-        if(bus->ppu->scanLine == 204){
-          printf("attributedata %x \n", bus->ppu->spriteLatch.attributeData);
 
-        }
 
 
 
@@ -881,22 +856,7 @@ void tickPpu(Bus* bus){
         
       }
 
-      if(bus->ppu->scanLine == 204){
-      if(bus->ppu->dotx == 320){
-        printf("sprite shifters \n");
-        printf("x Hi Lo BgPrior\n");
-        for(int i = 0; i < (bus->ppu->spriteLatchCounter / 4); ++i){
-          
-          printf("%x %x %x %x ", bus->ppu->spriteShifters[i].xCoordinate, bus->ppu->spriteShifters[i].bitPlaneHi, bus->ppu->spriteShifters[i].bitPlaneLo, bus->ppu->spriteShifters[i].bgPriorityFlag);
-     
-          printf("\n");
 
-          
-
-        }
-
-      }
-      }
    
 
     }
