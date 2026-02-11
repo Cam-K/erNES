@@ -402,6 +402,7 @@ void tickPpu(Bus* bus){
   uint8_t bitsCombined = 0;
   uint8_t bitsCombinedBackground = 0;
   uint8_t spritePriority = 0;
+  uint8_t tileIndex;
 
   #if TICKPPUDEBUGLOG == 1
   if(bus->ppu->dotx == 0){
@@ -520,6 +521,9 @@ void tickPpu(Bus* bus){
 
  
   
+
+    } else {
+      bitsCombined = 0;
 
     }
 
@@ -690,18 +694,34 @@ void tickPpu(Bus* bus){
 
         }
 
-        // if y coordinate is in range of the scanline, copy the rest of the OAM contents into secondaryOAM
-        if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= bus->ppu->scanLine) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 7) >= bus->ppu->scanLine)){
-          for(int i = 1; i < 4; ++i){
-            bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
+        if(getBit(bus->ppu->ctrl, 5) == 0){
+          // if y coordinate is in range of the scanline, copy the rest of the OAM contents into secondaryOAM
+          if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= bus->ppu->scanLine) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 7) >= bus->ppu->scanLine)){
+            for(int i = 1; i < 4; ++i){
+              bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
+            }
+          // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
+            if(bus->ppu->oamIndex.n == 0){
+              bus->ppu->spriteZeroInRangeFlag = 1;
+            }
+            bus->ppu->secondaryOam.spriteCounter++;
           }
-         // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
-          if(bus->ppu->oamIndex.n == 0){
-            bus->ppu->spriteZeroInRangeFlag = 1;
+          bus->ppu->spriteEvaluationStateMachine = 1;
+
+        } else {
+          if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= bus->ppu->scanLine) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 15) >= bus->ppu->scanLine)){
+            for(int i = 1; i < 4; ++i){
+              bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
+            }
+          // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
+            if(bus->ppu->oamIndex.n == 0){
+              bus->ppu->spriteZeroInRangeFlag = 1;
+            }
+            bus->ppu->secondaryOam.spriteCounter++;
           }
-          bus->ppu->secondaryOam.spriteCounter++;
+          bus->ppu->spriteEvaluationStateMachine = 1;
+
         }
-        bus->ppu->spriteEvaluationStateMachine = 1;
 
       } else if(bus->ppu->spriteEvaluationStateMachine == 1){
       
@@ -779,18 +799,50 @@ void tickPpu(Bus* bus){
         } else {
           patternTableOffset = 0;
         }
-        // fetch bitplaneLo
-        if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
-          if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-            bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
+
+    
+        if(getBit(bus->ppu->ctrl, 5) == 0){
+          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
+            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
+            } else {
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)));
+
+            }
           } else {
-            bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)));
+            bus->ppu->spriteLatch.bitPlaneLo = 0;
 
           }
         } else {
-          bus->ppu->spriteLatch.bitPlaneLo = 0;
+          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
+            tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
+            if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
+              patternTableOffset = 0x1000;
+
+            } else {
+              patternTableOffset = 0;
+            }
+            if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+            } else {
+              tileIndex -= 8;
+              bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+            }
+            
+            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + tileIndex);
+            } else {
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - tileIndex));
+
+            }
+          } else {
+            bus->ppu->spriteLatch.bitPlaneLo = 0;
+
+          }
 
         }
+
+
         if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
 
           // mirror the bits if necessary
@@ -812,17 +864,43 @@ void tickPpu(Bus* bus){
         } else {
           patternTableOffset = 0;
         }
-        if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
-          if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-            bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
+      
+        if(getBit(bus->ppu->ctrl, 5) == 0){
+          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
+            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
+            } else {
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)) + 8));
+
+            }
           } else {
-            bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)) + 8));
+            bus->ppu->spriteLatch.bitPlaneHi = 0;
+          }
+
+
+        } else {
+          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
+            tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
+            if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+            } else {
+              tileIndex -= 8;
+              bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+            }
+            
+            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (tileIndex + 8));
+            } else {
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - tileIndex) + 8));
+
+            }
+          } else {
+            bus->ppu->spriteLatch.bitPlaneHi = 0;
 
           }
-        } else {
-          bus->ppu->spriteLatch.bitPlaneHi = 0;
 
         }
+
         if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
 
           // mirror the bits if necessary
