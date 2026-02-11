@@ -815,23 +815,39 @@ void tickPpu(Bus* bus){
           }
         } else {
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
+
+            
             tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
+
+            // in 8x16 mode, the patterntable offset is determined by the first bit
             if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
               patternTableOffset = 0x1000;
 
             } else {
               patternTableOffset = 0;
             }
-            if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
-              bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
-            } else {
-              tileIndex -= 8;
-              bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
-            }
+
             
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+
+              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+                bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+              } else {
+                tileIndex -= 8;
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+              }
+              
               bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + tileIndex);
             } else {
+
+              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+                // if mirroring is enabled, fetch the second tile first
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+              } else {
+                tileIndex -= 8;
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+              }
+              
               bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - tileIndex));
 
             }
@@ -881,16 +897,23 @@ void tickPpu(Bus* bus){
         } else {
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
             tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
-            if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
-              bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
-            } else {
-              tileIndex -= 8;
-              bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
-            }
-            
+
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+
+              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+                bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+              } else {
+                tileIndex -= 8;
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+              }
               bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (tileIndex + 8));
             } else {
+              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+              } else {
+                tileIndex -= 8;
+                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+              }
               bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - tileIndex) + 8));
 
             }
