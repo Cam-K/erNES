@@ -527,6 +527,8 @@ void tickPpu(Bus* bus){
 
     }
 
+    
+
 
     // ********* shift the shift registers *********
     if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || (bus->ppu->scanLine == 261)){
@@ -842,8 +844,12 @@ void tickPpu(Bus* bus){
 
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
                 // if mirroring is enabled, fetch the second tile first
+
+                
                 bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               } else {
+
+                // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
                 tileIndex -= 8;
                 bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe);
               }
@@ -903,6 +909,8 @@ void tickPpu(Bus* bus){
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
                 bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
               } else {
+
+                // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
                 tileIndex -= 8;
                 bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               }
