@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "cpu.h"
 #include "general.h"
+#include "apu.h"
 
 
 
@@ -125,9 +126,12 @@ typedef struct _Bus {
 
   // peripherals on the bus
   PPU* ppu;
+  APU* apu;
   Controller controller1;
   Controller controller2;
   uint8_t oamdma;
+
+
 
   // mapper number
   int mapper;

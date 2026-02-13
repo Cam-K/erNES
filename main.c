@@ -925,15 +925,9 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
 
           }
           
-          if(bus->ppu->scanLine == 240){
-  
-            
-            drawFrameBuffer(bus->ppu, renderer, texture);
+          if(bus->ppu->scanLine == 261){
 
-            
-            //printNameTable(bus);
-          } else if(bus->ppu->scanLine == 261){
-            prerenderScanline(bus);
+            drawFrameBuffer(bus->ppu, renderer, texture);
 
             // after prerenderscanline, mark the end of the frame, then delay until the next frame is drawn
             frame_end = SDL_GetPerformanceCounter();

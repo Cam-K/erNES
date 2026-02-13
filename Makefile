@@ -2,8 +2,8 @@ CC=gcc
 WCC=x86_64-w64-mingw32-gcc-10-posix
 CFLAGS= `sdl2-config --cflags --libs` -lcjson -I. -I/usr/include -I/usr/include/x86_64-linux-gnu -g -O1 -lm 
 
-all: general.o memory.o cpu.o ppu.o main.o
-	$(CC) general.o cpu.o memory.o ppu.o main.o $(CFLAGS) -o ernes
+all: general.o memory.o cpu.o ppu.o main.o apu.o
+	$(CC) general.o cpu.o memory.o ppu.o main.o apu.o $(CFLAGS) -o ernes
 
 cpu.o: cpu.c 
 	$(CC) $(CFLAGS) -c cpu.c
@@ -19,6 +19,9 @@ ppu.o: ppu.c
 
 general.o: general.c
 	$(CC) $(CFLAGS) -c general.c
+
+apu.o: apu.c
+	$(CC) $(CFLAGS) -c apu.c
 
 
 

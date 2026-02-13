@@ -28,6 +28,7 @@
 
 
 
+
 void initMemStruct(Mem* mem, uint64_t size, enum DeviceType type, int inuse){
   if(inuse == TRUE){
     mem->contents = calloc(size, sizeof(uint8_t));
@@ -125,6 +126,7 @@ void initBus(Bus* bus, uint16_t banks){
   }
   bus->cpu = malloc(sizeof(CPU));
   bus->ppu = malloc(sizeof(PPU));
+  bus->apu = calloc(1, sizeof(APU));
   bus->numOfBlocks = banks;
   bus->controller1.latchedButtons = 0x00;
   bus->controller1.strobed = 0;
