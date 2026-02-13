@@ -927,14 +927,11 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
           
           if(bus->ppu->scanLine == 240){
   
-            vblankStart(bus);
+            
             drawFrameBuffer(bus->ppu, renderer, texture);
 
             
             //printNameTable(bus);
-          } else if(bus->ppu->scanLine == 260){
-            vblankEnd(bus);
-
           } else if(bus->ppu->scanLine == 261){
             prerenderScanline(bus);
 

@@ -44,7 +44,6 @@ void initPpu(PPU* ppu, int banks){
   ppu->ppubus = calloc(1, sizeof(PPUBus));
 
   if(banks > 0){
-    printf("allocating %d banks \n", banks);
     ppu->ppubus->memArr = calloc(banks, sizeof(Mem));
   } else if(banks == 0){
     ppu->ppubus->memArr = calloc(1, sizeof(Mem));
@@ -70,7 +69,9 @@ void initPpu(PPU* ppu, int banks){
   ppu->frames = 0;
 
 
+  
 }
+
 
 // powerFlag is used to denote whether the reset is used
 // for a power up as opposed to just a reset
@@ -120,7 +121,22 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->spriteEvaluationStateMachine = 0;
   ppu->spriteLatchCounter = 0;
   
+  for(int i = 0; i < 8; ++i){
+
+    resetSpriteShifter(&ppu->spriteShifters[i]);
+
+  }
   
+
+}
+
+void resetSpriteShifter(SpriteShifter* spriteShifter){
+  spriteShifter->attributeData = 0;
+  spriteShifter->bgPriorityFlag = 0;
+  spriteShifter->bitPlaneHi = 0;
+  spriteShifter->bitPlaneLo = 0;
+  spriteShifter->xCoordinate = 0;
+
 
 }
 
@@ -794,16 +810,17 @@ void tickPpu(Bus* bus){
         
 
       } else if(bus->ppu->dotx % 8 == 5){
-
-
-        if(getBit(bus->ppu->ctrl, 3) != 0){
-          patternTableOffset = 0x1000;
-        } else {
-          patternTableOffset = 0;
-        }
-
-    
+        // choose between 8x16 or 8x8 sprite mode
         if(getBit(bus->ppu->ctrl, 5) == 0){
+
+
+          if(getBit(bus->ppu->ctrl, 3) != 0){
+            patternTableOffset = 0x1000;
+          } else {
+            patternTableOffset = 0;
+          }
+
+
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
               bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
@@ -815,46 +832,55 @@ void tickPpu(Bus* bus){
             bus->ppu->spriteLatch.bitPlaneLo = 0;
 
           }
+
+
         } else {
+          // in 8x16 mode, the patterntable offset is determined by the first bit of the tile number
+          if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
+            patternTableOffset = 0x1000;
+
+          } else {
+            patternTableOffset = 0;
+          }
+
+
+
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
 
             
             tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
+            uint16_t tileNumberTemp;
 
-            // in 8x16 mode, the patterntable offset is determined by the first bit
-            if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
-              patternTableOffset = 0x1000;
-
-            } else {
-              patternTableOffset = 0;
-            }
-
-            
+            // choose between flipping the sprite vertically or not
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
 
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
-                bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+
+                tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
+
               } else {
+
                 tileIndex -= 8;
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+
               }
               
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + tileIndex);
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + tileIndex);
             } else {
 
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
                 // if mirroring is enabled, fetch the second tile first
 
                 
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               } else {
 
                 // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
                 tileIndex -= 8;
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
               }
               
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - tileIndex));
+              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex));
 
             }
           } else {
@@ -881,13 +907,14 @@ void tickPpu(Bus* bus){
 
       } else if(bus->ppu->dotx % 8 == 7){
 
-        if(getBit(bus->ppu->ctrl, 3) != 0){
-          patternTableOffset = 0x1000;
-        } else {
-          patternTableOffset = 0;
-        }
-      
+
         if(getBit(bus->ppu->ctrl, 5) == 0){
+
+          if(getBit(bus->ppu->ctrl, 3) != 0){
+            patternTableOffset = 0x1000;
+          } else {
+            patternTableOffset = 0;
+          }
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
               bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
@@ -901,29 +928,41 @@ void tickPpu(Bus* bus){
 
 
         } else {
+                      
+          if(getBit(bus->ppu->spriteLatch.tileNumber, 0) == 1){
+            patternTableOffset = 0x1000;
+
+          } else {
+            patternTableOffset = 0;
+          }
+
           if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
+            uint16_t tileNumberTemp;
             tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
 
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
 
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
-                bus->ppu->spriteLatch.tileNumber = bus->ppu->spriteLatch.tileNumber & 0xfe;
+
+                tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
+    
               } else {
 
                 // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
                 tileIndex -= 8;
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               }
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (tileIndex + 8));
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (tileIndex + 8));
             } else {
               if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               } else {
                 tileIndex -= 8;
-                bus->ppu->spriteLatch.tileNumber = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
               }
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - tileIndex) + 8));
+            
 
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - (tileIndex + 8)));
             }
           } else {
             bus->ppu->spriteLatch.bitPlaneHi = 0;
@@ -1429,38 +1468,9 @@ void fetchFirstTwoTiles(PPU* ppu){
 
 }
 
-void vblankStart(Bus* bus){
-  
-  //printf("vblank start! \n");
-  
-  bus->ppu->vblank = 1;
-
-
-  // checks vblank enable bit
-  if(getBit(bus->ppu->ctrl, 7) == 0b10000000){
-    //nmi(bus->cpu, bus);
-  }
-
-
-}
 
 
 
-void vblankEnd(Bus* bus){
-
-  
-  bus->ppu->vblank = 0;
-  bus->ppu->frames++;
-
-
-  // clears sprite 0 flag
-  
-
-  // clears sprite overflow flag
-  bus->ppu->prerenderScanlineFlag = 1;
-
-
-}
 
 
 

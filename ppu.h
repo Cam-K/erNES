@@ -238,6 +238,8 @@ typedef struct _PPU {
 void initPpu(PPU*, int);
 void resetPpu(PPU*, int);
 
+void resetSpriteShifter(SpriteShifter*);
+
 void populatePalette(PPU*);
 
 
@@ -277,3 +279,4 @@ void prerenderScanline(Bus*);
 void tickPpu(Bus*);
 
 uint8_t parseSpriteShifter(PPU*, int);
+
