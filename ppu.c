@@ -152,8 +152,8 @@ void dmaTransfer(Bus* bus){
     bus->ppu->oam[i] = readBus(bus, addr);
   }
 
-  // TODO: implement dotx overflow into scanline to make this work
   // if cpu cycles are even, tick the ppu 1539 times, else tick it 1542 times, which is the length of the DMA
+  
   if(bus->cpu->cycles % 2 == 0){
     for(int i = 0; i < 1539; ++i){
       tickPpu(bus);
@@ -164,6 +164,8 @@ void dmaTransfer(Bus* bus){
     }
 
   }  
+  
+  
   
 }
 
@@ -578,9 +580,7 @@ void tickPpu(Bus* bus){
             bus->ppu->attritebuteDataLatch = findAndReturnAttributeByte(tempV,  bus->ppu->attritebuteDataLatch);
 
         } else if(bus->ppu->dotx % 8 == 5){
-          #if TICKPPUDEBUGLOG == 1
-          printf("\t fetching pattern tile lo byte \n");
-          #endif
+
           // fetch pattern table tile lo byte
           if(getBit(bus->ppu->ctrl, 4) == 0){
             patternTableOffset = 0;
@@ -588,17 +588,23 @@ void tickPpu(Bus* bus){
             patternTableOffset = 0x1000;
           }
           bus->ppu->bitPlaneLoLatch = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->nameTableByteLatch << 4) + bus->ppu->vregister.vcomp.fineY);
-        } else if(bus->ppu->dotx % 8 == 7){
+
           #if TICKPPUDEBUGLOG == 1
-          printf("\t fetching pattern tile hi byte \n");
+          printf("\t fetching pattern tile lo byte: %x \n", bus->ppu->bitPlaneLoLatch);
           #endif
+        } else if(bus->ppu->dotx % 8 == 7){
+
           if(getBit(bus->ppu->ctrl, 4) == 0){
             patternTableOffset = 0;
           } else if (getBit(bus->ppu->ctrl, 4) != 0){
             patternTableOffset = 0x1000;
           }
           bus->ppu->bitPlaneHiLatch = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->nameTableByteLatch << 4) + bus->ppu->vregister.vcomp.fineY + 8);
-          //printf("\t latching hi bits %x \n", bus->ppu->bitPlaneHiLatch);
+
+          #if TICKPPUDEBUGLOG == 1
+          printf("\t fetching pattern tile hi byte: %x \n", bus->ppu->bitPlaneHiLatch);
+          #endif
+
         } else if(bus->ppu->dotx % 8 == 0){
           #if TICKPPUDEBUGLOG == 1
           printf("\t incrementing course x \n");        
@@ -633,7 +639,7 @@ void tickPpu(Bus* bus){
       }
     }
 
-    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239){
+    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || bus->ppu->scanLine == 261){
       if(bus->ppu->dotx == 256){
       // printf("\t incrementing y \n");
         incrementY(bus->ppu);
@@ -1036,10 +1042,12 @@ void tickPpu(Bus* bus){
 
   if(bus->ppu->dotx == 340){
     bus->ppu->dotx = 0;
-    bus->ppu->scanLine++;
-    if(bus->ppu->scanLine == 262){
+
+    if(bus->ppu->scanLine == 261){
       bus->ppu->scanLine = 0;
-    } 
+    } else {
+      bus->ppu->scanLine++;
+    }
 
   } else {
     bus->ppu->dotx++;
