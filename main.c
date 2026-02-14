@@ -44,6 +44,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
 #include "general.h"
+#include "apu.h"
 
 #define MAX_STR 128
 
@@ -579,6 +580,7 @@ void startNes(char* romPath, int screenScaling){
       
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
 
       bus.ppu->mapper = bus.mapper;
       if(numOfChrRoms == 0){
@@ -686,6 +688,7 @@ void startNes(char* romPath, int screenScaling){
       }
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
 
@@ -742,6 +745,7 @@ void startNes(char* romPath, int screenScaling){
       }
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
 
@@ -791,6 +795,7 @@ void startNes(char* romPath, int screenScaling){
 
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
 
@@ -838,6 +843,7 @@ void startNes(char* romPath, int screenScaling){
       }
       reset(bus.cpu, &bus);
       resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -895,8 +901,6 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
 
       // enter main loop
       while(1){
-      // mark time at the start of the frame being drawn
-      // TODO: implement dot based renderer
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           checkForInterrupts(bus);
           oppCode = readBus(bus, bus->cpu->pc);
@@ -912,19 +916,12 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
          
           //printf("cycles total: %d \n", bus->cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
-          // render a scanline except while in vblank and during the prerender scanline (261)
-          if(bus->ppu->vblank == 0 && bus->ppu->prerenderScanlineFlag == 0){
-          //  renderScanline(bus->ppu);
-          }
 
-          //printf("scanlines %d \n", bus->ppu->scanLine);
-
-
-          if(bus->ppu->scanLine == 0){
+          if(bus->ppu->scanLine == 1){
             frame_start = SDL_GetPerformanceCounter();
 
           }
-          
+            
           if(bus->ppu->scanLine == 261){
 
             drawFrameBuffer(bus->ppu, renderer, texture);
@@ -1043,9 +1040,9 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
             bus->ppu->frames++;
           }
 
-          bus->ppu->scanLine++;
-          bus->ppu->scanLineSprites++;
-          bus->ppu->dotx = 0;
+          //bus->ppu->scanLine++;
+          //bus->ppu->scanLineSprites++;
+          //bus->ppu->dotx = 0;
 
           bus->cpu->cycles = 0;
 

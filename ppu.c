@@ -154,7 +154,6 @@ void dmaTransfer(Bus* bus){
 
   // TODO: implement dotx overflow into scanline to make this work
   // if cpu cycles are even, tick the ppu 1539 times, else tick it 1542 times, which is the length of the DMA
-  /*
   if(bus->cpu->cycles % 2 == 0){
     for(int i = 0; i < 1539; ++i){
       tickPpu(bus);
@@ -164,10 +163,7 @@ void dmaTransfer(Bus* bus){
       tickPpu(bus);
     }
 
-  }
-  */
-
-
+  }  
   
 }
 
@@ -1012,6 +1008,8 @@ void tickPpu(Bus* bus){
 
 
     }
+    
+    
   }
   
   if(bus->ppu->scanLine == 261 && bus->ppu->dotx == 1){
@@ -1036,7 +1034,18 @@ void tickPpu(Bus* bus){
 
   }
 
-  bus->ppu->dotx++;
+  if(bus->ppu->dotx == 340){
+    bus->ppu->dotx = 0;
+    bus->ppu->scanLine++;
+    if(bus->ppu->scanLine == 262){
+      bus->ppu->scanLine = 0;
+    } 
+
+  } else {
+    bus->ppu->dotx++;
+
+  }
+  
     
 
 }

@@ -1,7 +1,7 @@
 #include "apu.h"
 
 
-void initApu(APU* apu){
+void resetApu(APU* apu){
 
   for(int i = 0; i < 4; ++i){
     apu->pulse1[i] = 0;

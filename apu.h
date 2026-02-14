@@ -1,3 +1,4 @@
+#pragma once
 
 #include <SDL2/SDL_audio.h>
 #include <stdint.h>
@@ -33,4 +34,4 @@ typedef struct _APU {
 
 } APU;
 
-void initApu(APU*);
+void resetApu(APU*);
