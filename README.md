@@ -20,7 +20,7 @@ Currently a work in progress.
 ## How to compile on a Linux system
 ```
 git clone https://github.com/Cam-K/ernes.git
-cd ernes
+cd erNES
 make
 ```
 
