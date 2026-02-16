@@ -432,7 +432,7 @@ void tickPpu(Bus* bus){
   if(getBit(bus->ppu->mask, 3) != 0){
     
     
-    // ******* Output ********
+    // ***** Background output process *****
     if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
       #if TICKPPUDEBUGLOG == 1
         printf("\t drawing a pixel \n");
@@ -466,45 +466,60 @@ void tickPpu(Bus* bus){
         // find 24Bit rgb value and set the current pixel value to this
        // bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[tempPalette[bitsCombined]];
        // printf("\t shifter value while drawing pixel Lo: %x Hi: %x \n", bus->ppu->bitPlane1, bus->ppu->bitPlane2);
+  
 
+    } else {
+      finalBackgroundPixel = 0;
 
-      // iterate through sprite shifters, find first sprite shifter to not return zero
-      // (Priority Mux)
-      finalSpritePixel = 0;
-      bitsCombined = 0;
-      for(int i = 0; i < 8; ++i){
-          if(bitsCombined == 0){
-            bitsCombined = parseSpriteShifter(bus->ppu, i);
-          } else {
-            // needed to shift the sprite shifters after a non-zero bit has been found
-            parseSpriteShifter(bus->ppu, i);
-          }
-       
-            // sprite zero hit
-          if(i == 0 && bus->ppu->spriteZeroInRangeFlag == 1){
-            if(bitsCombined != 0 && bitsCombinedBackground != 0){
-              bus->ppu->status = setBit(bus->ppu->status, 6);
+    }
+
+    // ***** sprite output process ******* 
+    if(getBit(bus->ppu->mask, 4) != 0){
+      if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+
+        finalSpritePixel = 0;
+        bitsCombined = 0;
+        for(int i = 0; i < 8; ++i){
+            if(bitsCombined == 0){
+              bitsCombined = parseSpriteShifter(bus->ppu, i);
+            } else {
+              // needed to shift the sprite shifters after a non-zero bit has been found
+              parseSpriteShifter(bus->ppu, i);
             }
-          }
-          
-          // if the sprite pixel hasn't been found yet and one was just found
-          if(finalSpritePixel == 0 && bitsCombined != 0){
-            finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
-            spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
-
-          }
-      }
-      
-      for(int i = 0; i < 8; ++i){
-        if(bus->ppu->spriteShifters[i].xCoordinate > 0){
-          bus->ppu->spriteShifters[i].xCoordinate--;
+        
+              // sprite zero hit
+            if(i == 0 && bus->ppu->spriteZeroInRangeFlag == 1){
+              if(bitsCombined != 0 && bitsCombinedBackground != 0){
+                bus->ppu->status = setBit(bus->ppu->status, 6);
+                //printf("sprite zero hit \n");
+              }
+            }
+            
+            // if the sprite pixel hasn't been found yet and one was just found
+            if(finalSpritePixel == 0 && bitsCombined != 0){
+              finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
+              spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
+              // there is no break here because despite finding the first bit that is non-zero, we still need
+              // to iterate through the sprite shifters to shift the shift registers by one, to keep everything in line
+            }
         }
+        
+        for(int i = 0; i < 8; ++i){
+          if(bus->ppu->spriteShifters[i].xCoordinate > 0){
+            bus->ppu->spriteShifters[i].xCoordinate--;
+          }
+        }
+
       }
-      
 
-      // select between foreground or background sprite, or backdrop colour
+    } else {
+      finalSpritePixel = 0;
+    }
+
+    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
 
+      // priority mux then selects a pixel
       if((finalSpritePixel & 0b11) == 0){
         if((finalBackgroundPixel & 0b11) == 0){
           // draw the backdrop colour
@@ -531,17 +546,7 @@ void tickPpu(Bus* bus){
       }
 
       bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + finalPixel)];
-
-
- 
-  
-
-    } else {
-      bitsCombined = 0;
-
     }
-
-    
 
 
     // ********* shift the shift registers *********
@@ -755,23 +760,13 @@ void tickPpu(Bus* bus){
 
       } else if(bus->ppu->spriteEvaluationStateMachine == 2){
         if(bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
-          bus->ppu->status = setBit(bus->ppu->status, 5);
+          bus->ppu->status = clearBit(bus->ppu->status, 5);
           // TODO: implement sprite overflow bug
           
         }
 
       } 
 
-     
-     
-      if(bus->ppu->dotx == 256){
-        if(bus->ppu->secondaryOam.spriteCounter == 0){
-          bus->ppu->secondaryOam.data[0] = 0xff;
-
-        }
-
-
-      }
       
       
       
@@ -856,7 +851,7 @@ void tickPpu(Bus* bus){
             // choose between flipping the sprite vertically or not
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
 
-              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              if(tileIndex <= 7){
 
                 tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
 
@@ -870,7 +865,7 @@ void tickPpu(Bus* bus){
               bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + tileIndex);
             } else {
 
-              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              if(tileIndex <= 7){
                 // if mirroring is enabled, fetch the second tile first
 
                 
@@ -944,7 +939,7 @@ void tickPpu(Bus* bus){
 
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
 
-              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              if(tileIndex <= 7){
 
                 tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
     
@@ -956,7 +951,7 @@ void tickPpu(Bus* bus){
               }
               bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (tileIndex + 8));
             } else {
-              if((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) <= 7){
+              if(tileIndex <= 7){
                 tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
               } else {
                 tileIndex -= 8;
@@ -1026,6 +1021,7 @@ void tickPpu(Bus* bus){
      #endif
       // clear sprite zero flag on scanline 261, dot 1
       bus->ppu->status = clearBit(bus->ppu->status, 6);
+      //printf("clearing sprite zero \n");
  
   } else if((bus->ppu->scanLine == 241) && (bus->ppu->dotx == 1)){
 
