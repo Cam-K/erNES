@@ -117,6 +117,8 @@ void resetPpu(PPU* ppu, int powerFlag){
   ppu->secondaryOam.spriteCounter = 0;
   ppu->oamIndex.n = 0;
   ppu->oamIndex.m = 0;
+  ppu->spriteZeroOnNextScanline = 0;
+  ppu->spriteZeroOnThisScanline = 0;
 
   ppu->spriteEvaluationStateMachine = 0;
   ppu->spriteLatchCounter = 0;
@@ -470,6 +472,7 @@ void tickPpu(Bus* bus){
 
     } else {
       finalBackgroundPixel = 0;
+      bitsCombinedBackground = 0;
 
     }
 
@@ -488,10 +491,10 @@ void tickPpu(Bus* bus){
             }
         
               // sprite zero hit
-            if(i == 0 && bus->ppu->spriteZeroInRangeFlag == 1){
+            if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
               if(bitsCombined != 0 && bitsCombinedBackground != 0){
                 bus->ppu->status = setBit(bus->ppu->status, 6);
-                //printf("sprite zero hit \n");
+                printf("sprite zero found at frame %d scanline %d dot %d \n", bus->ppu->frames, bus->ppu->scanLine, bus->ppu->dotx);
               }
             }
             
@@ -692,7 +695,6 @@ void tickPpu(Bus* bus){
       bus->ppu->oamIndex.m = 0;
       bus->ppu->oamIndex.n = 0;
       bus->ppu->spriteEvaluationStateMachine = 0;
-      bus->ppu->spriteZeroInRangeFlag = 0;
     }
 
     //  
@@ -709,6 +711,7 @@ void tickPpu(Bus* bus){
       if(bus->ppu->dotx == 65){
         bus->ppu->spriteEvaluationStateMachine = 0;
         bus->ppu->secondaryOam.spriteCounter = 0;
+        bus->ppu->spriteZeroOnNextScanline = 0;
       }
       
       if(bus->ppu->spriteEvaluationStateMachine == 0){
@@ -727,7 +730,7 @@ void tickPpu(Bus* bus){
             }
           // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
             if(bus->ppu->oamIndex.n == 0){
-              bus->ppu->spriteZeroInRangeFlag = 1;
+              bus->ppu->spriteZeroOnNextScanline = 1;
             }
             bus->ppu->secondaryOam.spriteCounter++;
           }
@@ -740,7 +743,7 @@ void tickPpu(Bus* bus){
             }
           // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
             if(bus->ppu->oamIndex.n == 0){
-              bus->ppu->spriteZeroInRangeFlag = 1;
+              bus->ppu->spriteZeroOnNextScanline = 1;
             }
             bus->ppu->secondaryOam.spriteCounter++;
           }
@@ -767,7 +770,9 @@ void tickPpu(Bus* bus){
 
       } 
 
-      
+      if(bus->ppu->dotx == 256){
+        bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
+      }
       
       
 
@@ -775,7 +780,11 @@ void tickPpu(Bus* bus){
     } else if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 320){
 
       // we now use the secondary OAM to transfer the data into lo and hi bitplanes, used to be stored into the 8 sprite latches
-
+ 
+      if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 319){
+        bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
+      }
+      
       if(bus->ppu->dotx == 257){
         bus->ppu->spriteLatchCounter = 0;
       }
