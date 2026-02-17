@@ -494,7 +494,6 @@ void tickPpu(Bus* bus){
             if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
               if(bitsCombined != 0 && bitsCombinedBackground != 0){
                 bus->ppu->status = setBit(bus->ppu->status, 6);
-                printf("sprite zero found at frame %d scanline %d dot %d \n", bus->ppu->frames, bus->ppu->scanLine, bus->ppu->dotx);
               }
             }
             
