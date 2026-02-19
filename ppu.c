@@ -50,7 +50,7 @@ void initPpu(PPU* ppu, int banks){
   }
   ppu->ppubus->numOfBlocks = banks;
   printf("initializing PPU \n");
-  ppu->frameBuffer = malloc(sizeof(uint32_t*) * 242);
+  ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_WIDTH);
   
   for(int i = 0; i < 242; ++i){
     ppu->frameBuffer[i] = calloc(WINDOW_WIDTH, sizeof(uint32_t));
@@ -397,13 +397,13 @@ void tickPpu(Bus* bus){
   uint16_t tempV;
 
   // 4 bit value, with 2 lsb containing the pixel info and the upper 2 msb containing the attribute data
-  uint8_t finalBackgroundPixel;
+  uint8_t finalBackgroundPixel = 0;
 
   // 4 bit value, with 2 lsb containing the pixel info and the upper 2 msb containing the attribute data
-  uint8_t finalSpritePixel;
+  uint8_t finalSpritePixel = 0;
 
   // the final pixel chosen to be outputted to the frame buffer (chosen between finalSpritePixel and finalBackgroundPixel)
-  uint8_t finalPixel;
+  uint8_t finalPixel = 0;
 
   uint16_t patternTableOffset = 0;
   uint16_t currentAttributeData;
@@ -549,7 +549,7 @@ void tickPpu(Bus* bus){
 
       }
 
-      bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + finalPixel)];
+      bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx - 1] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + finalPixel)];
     }
 
 
