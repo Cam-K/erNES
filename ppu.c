@@ -948,6 +948,8 @@ void tickPpu(Bus* bus){
             uint16_t tileNumberTemp;
             tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
 
+
+            // if sprite is vertically mirrored or not
             if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
 
               if(tileIndex <= 7){
@@ -970,7 +972,7 @@ void tickPpu(Bus* bus){
               }
             
 
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - (tileIndex + 8)));
+              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex) + 8);
             }
           } else {
             bus->ppu->spriteLatch.bitPlaneHi = 0;
