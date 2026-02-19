@@ -224,7 +224,8 @@ typedef struct _PPU {
 
 
   // flag raised when the first entry in the sprite shifter corresponds to sprite zero in the OAM
-  int spriteZeroInRangeFlag;
+  int spriteZeroOnNextScanline;
+  int spriteZeroOnThisScanline; 
 
 
 
