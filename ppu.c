@@ -494,6 +494,8 @@ void tickPpu(Bus* bus){
             if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
               if(bitsCombined != 0 && bitsCombinedBackground != 0){
                 bus->ppu->status = setBit(bus->ppu->status, 6);
+                //printf("sprite zero occurs on scanline %d dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
+                bus->ppu->spriteZeroOnThisScanline = 0;
               }
             }
             
@@ -884,6 +886,7 @@ void tickPpu(Bus* bus){
                 tileIndex -= 8;
                 tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
               }
+ 
               
               bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex));
 

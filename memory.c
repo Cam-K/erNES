@@ -252,9 +252,76 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
 
         break;
     }
+  } else if(addr >= 0x4000 && addr <= 0x4013){ 
+
+    switch(addr){
+      case 0x4000:
+        bus->apu->pulse1[0] = val;
+        break;
+      case 0x4001:
+        bus->apu->pulse1[1] = val;
+        break;
+      case 0x4002:
+        bus->apu->pulse1[2] = val;
+        break;
+      case 0x4003:
+        bus->apu->pulse1[3] = val;
+        break;
+      case 0x4004:
+        bus->apu->pulse2[0] = val;
+        break;
+      case 0x4005:
+        bus->apu->pulse2[1] = val;
+        break;
+      case 0x4006:
+        bus->apu->pulse2[2] = val;
+        break;
+      case 0x4007:
+        bus->apu->pulse2[3] = val;
+        break;
+      case 0x4008:
+        bus->apu->triangle[0] = val;
+        break;
+      case 0x4009:
+        bus->apu->triangle[1] = val;
+        break;
+      case 0x400a:
+        bus->apu->triangle[2] = val;
+        break;
+      case 0x400b:
+        bus->apu->triangle[3] = val;
+        break;
+      case 0x400c:
+        bus->apu->noise[0] = val;
+        break;
+      case 0x400d:
+        bus->apu->noise[1] = val;
+        break;
+      case 0x400e: 
+        bus->apu->noise[2] = val;
+        break;
+      case 0x400f:
+        bus->apu->noise[3] = val;
+        break;
+      case 0x4010:
+        bus->apu->dmc[0] = val;
+        break;
+      case 0x4011:
+        bus->apu->dmc[1] = val;
+        break;
+      case 0x4012:
+        bus->apu->dmc[2] = val;
+        break;
+      case 0x4013:
+        bus->apu->dmc[3] = val;
+        break;
+    }
+  
   } else if(addr == 0x4014){
     bus->ppu->oamdma = val;
     dmaTransfer(bus);
+  } else if(addr == 0x4015){
+    bus->apu->control = val;
   } else if(addr == 0x4016){
 
     if(bus->controller1.strobed == 0 && val == 1){
@@ -268,13 +335,8 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
     return;
     
   } else if(addr == 0x4017){
-    if(bus->controller2.strobed == 0 && val == 1){
-      bus->controller2.strobed = 1;
-    } else if(bus->controller2.strobed == 1 && val == 0){
-      bus->controller2.strobed = 0;
-      bus->controller2.latchedButtons = bus->controller2.sdlButtons;
-      bus->controller2.readCount = 0;
-    } 
+    bus->apu->frameCounter = val;
+
 
   } else {
     
@@ -447,6 +509,9 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         }
         return temp;
     }
+  } else if(addr == 0x4015){
+    return bus->apu->status;
+  
   } else if(addr == 0x4016){
     if(bus->controller1.strobed == 0){
       switch(bus->controller1.readCount){

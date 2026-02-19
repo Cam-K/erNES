@@ -97,7 +97,6 @@ int nmi(CPU* cpu, Bus* bus){
 
 
 
-
 }
 
 
@@ -146,6 +145,7 @@ int irq(CPU* cpu, Bus* bus){
 int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
   int cyclesCompleted;
   //printf("\t Executing oppcode: %x at %x \n", oppCode, cpu->pc);
+  
   if(cpu->haltFlag == 0){
   switch(oppCode){
     case 0x00:
@@ -1577,6 +1577,7 @@ int rti(CPU* cpu, Bus* bus){
   // clears the brk flag
   // 
   cpu->pf = clearBit(cpu->pf, 4);
+  
 
   return 6; 
 

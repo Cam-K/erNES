@@ -4,8 +4,8 @@
 void resetApu(APU* apu){
 
   for(int i = 0; i < 4; ++i){
+    apu->pulse0[i] = 0;
     apu->pulse1[i] = 0;
-    apu->pulse2[i] = 0;
     apu->noise[i] = 0;
     apu->dmc[i] = 0;
 

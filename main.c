@@ -51,7 +51,7 @@
 // original resolution of Nintendo
 
 // this includes the hblanking period as well
-#define CPU_CYCLES_PER_SCANLINE 114
+#define CPU_CYCLES_PER_SCANLINE 113
 
 void parseTwoHexNums(char*, uint16_t*, uint16_t*);
 
@@ -1051,7 +1051,7 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
             bus->ppu->scanLineSprites = -1;
           }
           if(bus->ppu->frames >= 20){
-            // freeAndExit(bus);
+             //freeAndExit(bus);
           }
 
       }
