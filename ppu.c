@@ -388,6 +388,74 @@ uint8_t parseSpriteShifter(PPU* ppu, int index){
 
 }
 
+uint8_t spriteOutputProcess(PPU* ppu){
+
+
+
+}
+
+uint8_t backgroundOutputProcess(PPU* ppu){
+  uint16_t patternTableOffset = 0;
+  uint16_t currentAttributeData;
+  uint8_t currentAttributeDataSprites = 0;
+  uint16_t currentAttributeDataLo;
+  uint16_t currentAttributeDataHi;
+  uint16_t bitLo_16;
+  uint16_t bitHi_16;
+  uint8_t bitsCombinedBackground = 0;
+  uint8_t finalBackgroundPixel = 0;
+  // background output
+  if(getBit(ppu->mask, 3) != 0){
+    
+    
+    // ***** Background output process *****
+    if(ppu->scanLine >= 0 && ppu->scanLine <= 239 && ppu->dotx >= 1 && ppu->dotx <= 256){
+      #if TICKPPUDEBUGLOG == 1
+        printf("\t drawing a pixel \n");
+
+        #endif
+    
+        // fetch data from shift registers for the current pixel
+        currentAttributeDataLo = 0;
+        currentAttributeDataLo = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister));
+        currentAttributeDataLo = currentAttributeDataLo >> findBit16bit(currentAttributeDataLo);
+        
+        currentAttributeDataHi = 0;
+        currentAttributeDataHi = (getBitFromLeft16bit(ppu->attributeData2, ppu->xregister));
+        currentAttributeDataHi = currentAttributeDataHi >> findBit16bit(currentAttributeDataHi);
+        currentAttributeDataHi = currentAttributeDataHi << 1;
+        
+
+        currentAttributeData = currentAttributeDataLo | currentAttributeDataHi;
+
+
+        // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
+        bitLo_16 = getBitFromLeft16bit(ppu->bitPlane1, ppu->xregister);
+        bitHi_16 = getBitFromLeft16bit(ppu->bitPlane2, ppu->xregister);
+        bitLo_16 = bitLo_16 >> findBit16bit(bitLo_16);
+        bitHi_16 = bitHi_16 >> findBit16bit(bitHi_16);
+        bitHi_16 = bitHi_16 << 1;
+        bitsCombinedBackground = bitLo_16 | bitHi_16;
+
+        finalBackgroundPixel = bitsCombinedBackground | (currentAttributeData << 2);
+
+        // find 24Bit rgb value and set the current pixel value to this
+       // bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[tempPalette[bitsCombined]];
+       // printf("\t shifter value while drawing pixel Lo: %x Hi: %x \n", bus->ppu->bitPlane1, bus->ppu->bitPlane2);
+  
+
+    } else {
+      finalBackgroundPixel = 0;
+      bitsCombinedBackground = 0;
+
+    }
+  }
+  return finalBackgroundPixel;
+
+
+
+}
+
 #define TICKPPUDEBUGLOG 0
 
 // TODO: implement dot based renderer
@@ -410,7 +478,6 @@ void tickPpu(Bus* bus){
   uint8_t currentAttributeDataSprites = 0;
   uint16_t currentAttributeDataLo;
   uint16_t currentAttributeDataHi;
-  uint8_t tempPalette[4];
   uint16_t bitLo_16;
   uint16_t bitHi_16;
   uint8_t bitLo;
@@ -430,54 +497,12 @@ void tickPpu(Bus* bus){
   // excludes the fineY component so that V can be used in our equations
   fillTempV(&tempV, bus->ppu->vregister.vcomp);
   
-  
-  if(getBit(bus->ppu->mask, 3) != 0){
+  //  correct order is OUTPUT -> SHIFT -> FETCH
+
+  // ***** background output process ******
+  finalBackgroundPixel = backgroundOutputProcess(bus->ppu);
     
-    
-    // ***** Background output process *****
-    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
-      #if TICKPPUDEBUGLOG == 1
-        printf("\t drawing a pixel \n");
-
-        #endif
-    
-        // fetch data from shift registers for the current pixel
-        currentAttributeDataLo = 0;
-        currentAttributeDataLo = (getBitFromLeft16bit(bus->ppu->attributeData1, bus->ppu->xregister));
-        currentAttributeDataLo = currentAttributeDataLo >> findBit16bit(currentAttributeDataLo);
-        
-        currentAttributeDataHi = 0;
-        currentAttributeDataHi = (getBitFromLeft16bit(bus->ppu->attributeData2, bus->ppu->xregister));
-        currentAttributeDataHi = currentAttributeDataHi >> findBit16bit(currentAttributeDataHi);
-        currentAttributeDataHi = currentAttributeDataHi << 1;
-        
-
-        currentAttributeData = currentAttributeDataLo | currentAttributeDataHi;
-
-
-        // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
-        bitLo_16 = getBitFromLeft16bit(bus->ppu->bitPlane1, bus->ppu->xregister);
-        bitHi_16 = getBitFromLeft16bit(bus->ppu->bitPlane2, bus->ppu->xregister);
-        bitLo_16 = bitLo_16 >> findBit16bit(bitLo_16);
-        bitHi_16 = bitHi_16 >> findBit16bit(bitHi_16);
-        bitHi_16 = bitHi_16 << 1;
-        bitsCombinedBackground = bitLo_16 | bitHi_16;
-
-        finalBackgroundPixel = bitsCombinedBackground | (currentAttributeData << 2);
-
-        // find 24Bit rgb value and set the current pixel value to this
-       // bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[tempPalette[bitsCombined]];
-       // printf("\t shifter value while drawing pixel Lo: %x Hi: %x \n", bus->ppu->bitPlane1, bus->ppu->bitPlane2);
-  
-
-    } else {
-      finalBackgroundPixel = 0;
-      bitsCombinedBackground = 0;
-
-    }
-}
-    
-        // ***** sprite output process ******* 
+  // ***** sprite output process ******* 
   if(getBit(bus->ppu->mask, 4) != 0){
     if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
@@ -493,7 +518,7 @@ void tickPpu(Bus* bus){
       
             // sprite zero hit
           if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
-            if(bitsCombined != 0 && bitsCombinedBackground != 0){
+            if(bitsCombined != 0 && finalBackgroundPixel != 0){
               bus->ppu->status = setBit(bus->ppu->status, 6);
               //printf("sprite zero occurs on scanline %d dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
               bus->ppu->spriteZeroOnThisScanline = 0;
@@ -523,7 +548,6 @@ void tickPpu(Bus* bus){
 
     
   // Select a bit to output 
-  // TODO: put in correct order of OUTPUT -> SHIFT -> FETCH
   if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
 

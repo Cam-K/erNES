@@ -324,9 +324,9 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
     bus->apu->control = val;
   } else if(addr == 0x4016){
 
-    if(bus->controller1.strobed == 0 && val == 1){
+    if(bus->controller1.strobed == 0 && (getBit(val, 0) == 1)){
       bus->controller1.strobed = 1;
-    } else if(bus->controller1.strobed == 1 && val == 0){
+    } else if(bus->controller1.strobed == 1 && (getBit(val, 0) == 0)){
       bus->controller1.strobed = 0;
       bus->controller1.latchedButtons = bus->controller1.sdlButtons;
       bus->controller1.readCount = 0;
@@ -469,7 +469,6 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 
   }
   if(addr >= 0 && addr <= 0x07ff){
-
     return bus->memArr[0].contents[addr];
   } else if(addr >= 0x0800 && addr <= 0x0fff){
     return bus->memArr[0].contents[addr - 0x800];

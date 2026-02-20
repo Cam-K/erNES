@@ -281,3 +281,6 @@ void tickPpu(Bus*);
 
 uint8_t parseSpriteShifter(PPU*, int);
 
+
+uint8_t spriteOutputProcess(PPU*);
+uint8_t backgroundOutputProcess(PPU*);
