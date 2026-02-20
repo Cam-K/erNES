@@ -475,52 +475,56 @@ void tickPpu(Bus* bus){
       bitsCombinedBackground = 0;
 
     }
+}
+    
+        // ***** sprite output process ******* 
+  if(getBit(bus->ppu->mask, 4) != 0){
+    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
-    // ***** sprite output process ******* 
-    if(getBit(bus->ppu->mask, 4) != 0){
-      if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
-
-        finalSpritePixel = 0;
-        bitsCombined = 0;
-        for(int i = 0; i < 8; ++i){
-            if(bitsCombined == 0){
-              bitsCombined = parseSpriteShifter(bus->ppu, i);
-            } else {
-              // needed to shift the sprite shifters after a non-zero bit has been found
-              parseSpriteShifter(bus->ppu, i);
-            }
-        
-              // sprite zero hit
-            if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
-              if(bitsCombined != 0 && bitsCombinedBackground != 0){
-                bus->ppu->status = setBit(bus->ppu->status, 6);
-                //printf("sprite zero occurs on scanline %d dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
-                bus->ppu->spriteZeroOnThisScanline = 0;
-              }
-            }
-            
-            // if the sprite pixel hasn't been found yet and one was just found
-            if(finalSpritePixel == 0 && bitsCombined != 0){
-              finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
-              spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
-              // there is no break here because despite finding the first bit that is non-zero, we still need
-              // to iterate through the sprite shifters to shift the shift registers by one, to keep everything in line
-            }
-        }
-        
-        for(int i = 0; i < 8; ++i){
-          if(bus->ppu->spriteShifters[i].xCoordinate > 0){
-            bus->ppu->spriteShifters[i].xCoordinate--;
+      finalSpritePixel = 0;
+      bitsCombined = 0;
+      for(int i = 0; i < 8; ++i){
+          if(bitsCombined == 0){
+            bitsCombined = parseSpriteShifter(bus->ppu, i);
+          } else {
+            // needed to shift the sprite shifters after a non-zero bit has been found
+            parseSpriteShifter(bus->ppu, i);
           }
-        }
-
+      
+            // sprite zero hit
+          if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
+            if(bitsCombined != 0 && bitsCombinedBackground != 0){
+              bus->ppu->status = setBit(bus->ppu->status, 6);
+              //printf("sprite zero occurs on scanline %d dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
+              bus->ppu->spriteZeroOnThisScanline = 0;
+            }
+          }
+          
+          // if the sprite pixel hasn't been found yet and one was just found
+          if(finalSpritePixel == 0 && bitsCombined != 0){
+            finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
+            spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
+            // there is no break here because despite finding the first bit that is non-zero, we still need
+            // to iterate through the sprite shifters to shift the shift registers by one, to keep everything in line
+          }
       }
+      
+      for(int i = 0; i < 8; ++i){
+        if(bus->ppu->spriteShifters[i].xCoordinate > 0){
+          bus->ppu->spriteShifters[i].xCoordinate--;
+        }
+      }
+
+    }
 
     } else {
       finalSpritePixel = 0;
     }
 
-    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+    
+  // Select a bit to output 
+  // TODO: put in correct order of OUTPUT -> SHIFT -> FETCH
+  if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
 
       // priority mux then selects a pixel
@@ -552,25 +556,28 @@ void tickPpu(Bus* bus){
       bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx - 1] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + finalPixel)];
     }
 
-
-    // ********* shift the shift registers *********
-    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || (bus->ppu->scanLine == 261)){
-
-      if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
-        #if TICKPPUDEBUGLOG == 1
-        printf("\t shifting the shift registers \n");
-        #endif
-        bus->ppu->bitPlane1 = bus->ppu->bitPlane1 << 1;
-        bus->ppu->bitPlane2 = bus->ppu->bitPlane2 << 1;
-        bus->ppu->attributeData1 = bus->ppu->attributeData1 << 1;
-        bus->ppu->attributeData2 = bus->ppu->attributeData2 << 1;
-      }
-
-    }
+    if(getBit(bus->ppu->mask, 3) != 0){
       
+      // ********* shift the shift registers *********
+      if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || (bus->ppu->scanLine == 261)){
+
+        if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
+          #if TICKPPUDEBUGLOG == 1
+          printf("\t shifting the shift registers \n");
+          #endif
+          bus->ppu->bitPlane1 = bus->ppu->bitPlane1 << 1;
+          bus->ppu->bitPlane2 = bus->ppu->bitPlane2 << 1;
+          bus->ppu->attributeData1 = bus->ppu->attributeData1 << 1;
+          bus->ppu->attributeData2 = bus->ppu->attributeData2 << 1;
+        }
+
+      }
+    }
+
+
 
     // ******** fetch data ******** 
-
+ if(getBit(bus->ppu->mask, 3) != 0){
    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || (bus->ppu->scanLine == 261)){
       if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
         if(bus->ppu->dotx % 8 == 1){
@@ -680,13 +687,9 @@ void tickPpu(Bus* bus){
 
     } 
     
-  } else {
-    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+ }
 
-      // when rendering is disabled, output the backdrop color
-      bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + 0)];
-    }
-  }
+
   
   // ****** Sprite Process ******
   if(getBit(bus->ppu->mask, 4) != 0){
