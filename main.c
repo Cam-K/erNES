@@ -437,7 +437,7 @@ void startNes(char* romPath, int screenScaling){
     screenScaling = 1;
   }
 
-  SDL_Window* win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling, 0);
+  SDL_Window* win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling, SDL_WINDOW_RESIZABLE);
   SDL_Renderer *renderer;
   SDL_Texture *texture;
 

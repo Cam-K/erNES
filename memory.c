@@ -900,7 +900,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
           if(ppu->ppubus->numOfBlocks == 4){
             // For SNROM Games
             temp = temp & 0b1111;
-          }
+          } 
         if(addr <= 0xfff){
           if(ppu->ppubus->memArr[temp & 0b1111].type == Ram){
             ppu->ppubus->memArr[temp & 0b11110].contents[addr] = val;

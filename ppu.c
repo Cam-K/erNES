@@ -418,11 +418,11 @@ uint8_t backgroundOutputProcess(PPU* ppu){
         // fetch data from shift registers for the current pixel
         currentAttributeDataLo = 0;
         currentAttributeDataLo = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister));
-        currentAttributeDataLo = currentAttributeDataLo >> findBit16bit(currentAttributeDataLo);
+        currentAttributeDataLo = currentAttributeDataLo >> (15 - ppu->xregister);
         
         currentAttributeDataHi = 0;
         currentAttributeDataHi = (getBitFromLeft16bit(ppu->attributeData2, ppu->xregister));
-        currentAttributeDataHi = currentAttributeDataHi >> findBit16bit(currentAttributeDataHi);
+        currentAttributeDataHi = currentAttributeDataHi >> (15 - ppu->xregister);
         currentAttributeDataHi = currentAttributeDataHi << 1;
         
 
@@ -430,10 +430,13 @@ uint8_t backgroundOutputProcess(PPU* ppu){
 
 
         // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
+        // and bitLo_16 is a 16 bit integer
         bitLo_16 = getBitFromLeft16bit(ppu->bitPlane1, ppu->xregister);
         bitHi_16 = getBitFromLeft16bit(ppu->bitPlane2, ppu->xregister);
-        bitLo_16 = bitLo_16 >> findBit16bit(bitLo_16);
-        bitHi_16 = bitHi_16 >> findBit16bit(bitHi_16);
+
+        // we are doing 15 - ppu->xregister because this will get us the bit in the first position
+        bitLo_16 = bitLo_16 >> (15 - ppu->xregister);
+        bitHi_16 = bitHi_16 >> (15 - ppu->xregister);
         bitHi_16 = bitHi_16 << 1;
         bitsCombinedBackground = bitLo_16 | bitHi_16;
 
