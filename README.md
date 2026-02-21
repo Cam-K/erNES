@@ -15,6 +15,7 @@ Currently a work in progress.
 - Mapper 1 (MMC1) (Partial Support) 
 - Mapper 2 (UxROM)
 - Mapper 3 (CNROM)
+- Mapper 7 (AxROM)
 
 
 ## How to compile on a Linux system
