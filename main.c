@@ -825,7 +825,11 @@ void startNes(char* romPath, int screenScaling){
         initMemStruct(&(bus.memArr[i + 1]), 0x8000, Rom, TRUE);
       }
       initPpu(bus.ppu, 3);
+
+      // 8KB CHR-RAM
       initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x2000, Ram, TRUE);
+
+      // two nametables
       initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x400, Ram, TRUE);
       initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Ram, TRUE);
       populatePalette(bus.ppu);

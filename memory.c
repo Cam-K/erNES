@@ -423,7 +423,15 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
       case 7:
         if(addr >= 0x8000){
           bus->bankSelect = val & 0b111;
+          if(getBit(val, 4) != 0){
+            bus->ppu->mirroring = 2; 
+
+          } else {
+            bus->ppu->mirroring = 3;
+
+          }
         }
+        break;
       }
     }
   
@@ -712,6 +720,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           
           return bus->memArr[bus->bankSelect + 1].contents[addr - 0x8000];
         }
+        break;
       
     }
   }
@@ -806,6 +815,9 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
         return ppu->ppubus->memArr[0].contents[addr];
       case 3:
         return ppu->ppubus->memArr[ppu->bankSelect].contents[addr];
+      case 7:
+        return ppu->ppubus->memArr[0].contents[addr];
+        
     }
   } else if(addr >= 0x2000 && addr <= 0x2fff){
     // vertical arrangement
@@ -931,6 +943,9 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
           }
         }
       }
+
+    } else if(ppu->mapper == 7){
+      ppu->ppubus->memArr[0].contents[addr] = val;
 
     }
     return;
