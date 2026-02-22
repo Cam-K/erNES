@@ -445,6 +445,8 @@ void startNes(char* romPath, int screenScaling){
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
   romPtr = fopen(romPath, "r");
 
+  SDL_SetWindowMinimumSize(win, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling);
+
 
   if(romPtr == NULL){
     printf("File not found \n");

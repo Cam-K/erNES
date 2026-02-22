@@ -165,7 +165,8 @@ void dmaTransfer(Bus* bus){
       tickPpu(bus);
     }
 
-  }  
+  } 
+  
   
   
   
@@ -676,13 +677,19 @@ void tickPpu(Bus* bus){
             bus->ppu->bitPlane2 = bus->ppu->bitPlane2 | (uint16_t)bus->ppu->bitPlaneHiLatch;
           }
           
-
-          incrementCourseX(bus->ppu);
         } 
       }
     }
+ }
 
+  if(getBit(bus->ppu->mask, 3) != 0 || getBit(bus->ppu->mask, 4) != 0){
     if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || bus->ppu->scanLine == 261){
+
+      if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
+        if(bus->ppu->dotx % 8 == 0){
+          incrementCourseX(bus->ppu);
+        }
+      }
       if(bus->ppu->dotx == 256){
       // printf("\t incrementing y \n");
         incrementY(bus->ppu);
@@ -713,8 +720,9 @@ void tickPpu(Bus* bus){
       bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 0) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 1);
 
     } 
+  }
     
- }
+ 
 
 
   
@@ -1097,287 +1105,11 @@ void tickPpu(Bus* bus){
 
 }
 
-// renderScanline()
-//   renders a scanline with the given registers 
-//   inputs:
-//     ppu - ppu to render a scanline with 
-//
 
-void renderScanline(PPU* ppu){
-  uint8_t attributeTableByte;
-  uint16_t patternTableIndice;
-  uint8_t bitPlane1 = 0;
-  uint8_t bitPlane2 = 0;
-  uint8_t bitLo;
-  uint8_t bitHi;
-  uint16_t bit1_16;
-  uint16_t bit2_16;
-  uint8_t bitsCombined;
-  uint8_t currentAttributeData;
-  uint16_t currentAttributeData1;
-  uint16_t currentAttributeData2;
-  uint16_t patternTableOffset = 0;
-  uint8_t spritePaletteIndex;
-  uint8_t bitsCombinedBackground = 0;
-  int spriteEvalCounter = 0;
-  int eightSixteenSpriteFlag;
-  uint16_t spritePatternTableOffset = 0;
-  uint8_t oamIndices[9];
-  uint8_t tempPalette[4]; 
-  uint16_t tempV;
 
-  if(getBit(ppu->ctrl, 4) == 0){
-    patternTableOffset = 0;
-  } else if (getBit(ppu->ctrl, 4) != 0){
-    patternTableOffset = 0x1000;
-  }
 
-  if(getBit(ppu->ctrl, 3) == 0){
-      spritePatternTableOffset = 0;
-  } else if(getBit(ppu->ctrl, 3) != 0){
-      spritePatternTableOffset = 0x1000;
-  }
-
-  eightSixteenSpriteFlag = getEightSixteen(ppu);
-
-
-  // Sprite Evaluation
-  //   Does a linear search through the oam, find 8 sprites on the current scanline that are going to be drawn and
-  //   stores the found oam indices into an array
-  //   Sprite evalution does not occur on scanline 0, so we start the sprite scanline at -1 and increment from here.
-  //   (no sprites if scanlinesprites == -1)
-  if(ppu->scanLineSprites > -1){
-    spriteEvalCounter = spriteEvaluation(ppu, oamIndices, eightSixteenSpriteFlag);
-  }
-
-
-
-  for(int i = 0; i < WINDOW_WIDTH; ++i){
-
-
-    
-    // if background rendering is enabled
-    if(getBit(ppu->mask, 3) == 0b1000){
-      // every tile, fetch the bitplanes from the nametable a tile ahead, to keep the buffer filled
-      if(i != 0 && i % 8 == 0){ 
-        fillTempV(&tempV, ppu->vregister.vcomp);
-        
-        //printf("vreg %x \n", tempV + 0x2000);
-        patternTableIndice = readPpuBus(ppu, 0x2000 + tempV);
-
-
-        // fetch lsb and msb bitplanes and fill shift register buffers
-        ppu->bitPlane1 = ppu->bitPlane1 | readPpuBus(ppu, patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY);
-        ppu->bitPlane2 = ppu->bitPlane2 | readPpuBus(ppu, patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY + 8);
-
-        attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV & 0x0c00) | ((tempV >> 4) & 0x38) | ((tempV >> 2) & 0x07));
-
-        // finds which quadrant V resides in and returns the appropriate 2-bit number from the byte
-        attributeTableByte = findAndReturnAttributeByte(tempV, attributeTableByte);
-
-        // copies it 8 times into the attribute table buffer (shift register)
-        for(int k = 0; k < 8; ++k){
-          if(getBit(attributeTableByte, 0) == 1){
-            ppu->attributeData1 = setBit16bit(ppu->attributeData1, k);
-          } else if(getBit(attributeTableByte, 0) == 0){
-            ppu->attributeData1 = clearBit16bit(ppu->attributeData1, k);
-          }
-
-          if(getBit(attributeTableByte, 1) == 0b10){
-            ppu->attributeData2 = setBit16bit(ppu->attributeData2, k);
-          } else if(getBit(attributeTableByte, 1) == 0){
-            ppu->attributeData2 = clearBit16bit(ppu->attributeData2, k);
-          }
-
-        }
-        incrementCourseX(ppu);
-
-      }
-
-
-
-      // fetch data from shift registers for the current pixel
-      currentAttributeData1 = 0;
-      currentAttributeData1 = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister));
-      currentAttributeData1 = currentAttributeData1 >> findBit16bit(currentAttributeData1);
-      
-      currentAttributeData2 = 0;
-      currentAttributeData2 = (getBitFromLeft16bit(ppu->attributeData2, ppu->xregister));
-      currentAttributeData2 = currentAttributeData2 >> findBit16bit(currentAttributeData2);
-      currentAttributeData2 = currentAttributeData2 << 1;
-      
-
-      currentAttributeData = currentAttributeData1 | currentAttributeData2;
-
-      // $3f00 is hard-wired to be the backdrop color
-      tempPalette[0] = readPpuBus(ppu, 0x3f00 + 0);
-      tempPalette[1] = readPpuBus(ppu, 0x3f00 + 1 + (currentAttributeData) * 4);
-      tempPalette[2] = readPpuBus(ppu, 0x3f00 + 2 + (currentAttributeData) * 4);
-      tempPalette[3] = readPpuBus(ppu, 0x3f00 + 3 + (currentAttributeData) * 4);
-
-
-      // shift the shift registers
-      ppu->attributeData1 = ppu->attributeData1 << 1;
-      ppu->attributeData2 = ppu->attributeData2 << 1;
-
-
-      // using data from the shift register, get the two bits from the bitplanes from the end of the shift registers
-      bit1_16 = getBitFromLeft16bit(ppu->bitPlane1, ppu->xregister);
-      bit2_16 = getBitFromLeft16bit(ppu->bitPlane2, ppu->xregister);
-      bit1_16 = bit1_16 >> findBit16bit(bit1_16);
-      bit2_16 = bit2_16 >> findBit16bit(bit2_16);
-      bit2_16 = bit2_16 << 1;
-      bitsCombined = bit1_16 | bit2_16;
-
-      // find 24Bit rgb value and set the pixel value to this
-      ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
-
-      ppu->bitPlane1 = ppu->bitPlane1 << 1;
-      ppu->bitPlane2 = ppu->bitPlane2 << 1;
-
-
-    // this is kept for later when checking for a sprite zero hit
-      bitsCombinedBackground = bitsCombined;
-
-      
-    } else if(getBit(ppu->mask, 3) == 0){
-      bitsCombinedBackground = 0;
-      ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[readPpuBus(ppu, 0x3f00 + 0)];
-    }
-
-
-   
-
-    // if sprite rendering is enabled
-    if(getBit(ppu->mask, 4) != 0 && ppu->scanLineSprites > -1){
-    // Second, now iterate through the amount of sprites that were found from Sprite Evaluation and display them if the beam resides in it's X coordinate
-    for(int j = 0; j < spriteEvalCounter; ++j){
-
-      // if rendering 8x16 sprites, fetch the spriteOffset from byte 1 of the OAM as opposed to bit 5 of PPUCTRL
-      if(eightSixteenSpriteFlag == 1){
-        if(getBit(ppu->oam[oamIndices[j] + 1], 0) == 0){
-          spritePatternTableOffset = 0;
-        } else if(getBit(ppu->oam[oamIndices[j] + 1], 0) == 1){
-          spritePatternTableOffset = 0x1000;
-        }
-      }
-
-      // + 3 because this gets the X coordinate of the tile
-      // if the beam is within the boundaries of foreground tile, draw the pixel
-      if(ppu->oam[oamIndices[j] + 3] <= i && ppu->oam[oamIndices[j] + 3] + 8 >= i){
- 
-
-       if(eightSixteenSpriteFlag == 0){
-
-
-          // if the sprite is vertically mirrored or not
-          if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0){ 
-
-          // oamIndices[j] + 1 because this is where the patterntable index resides in
-            bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + ppu->scanLineSprites - ppu->oam[oamIndices[j]]));
-            bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + ppu->scanLineSprites - ppu->oam[oamIndices[j]] + 8));    
-          } else if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0b10000000) {
-            bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + (7 - (ppu->scanLineSprites - ppu->oam[oamIndices[j]]))));
-            bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + (((uint16_t) ppu->oam[oamIndices[j] + 1]) << 4) + (7 - (ppu->scanLineSprites - ppu->oam[oamIndices[j]]) + 8)));    
-          }
-
-        } else if(eightSixteenSpriteFlag == 1){
-
-
-          // if the sprite is vertically mirrored or not
-          if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0){ 
-            if((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) <= 7){
-              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + ppu->scanLineSprites - ppu->oam[oamIndices[j]]));
-              bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) << 4) + (ppu->scanLineSprites - ppu->oam[oamIndices[j]]) + 8));    
-            } else if((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (ppu->scanLineSprites - ppu->oam[oamIndices[j]]) - 8));
-              bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + ((((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) >> 0) + 1) << 4) + (ppu->scanLineSprites - ppu->oam[oamIndices[j]])));    
-            }
-
-          } else if(getBit(ppu->oam[oamIndices[j] + 2], 7) == 0b10000000) {
-
-            if((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) <= 7){
-              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) + 1) << 4) + (7 - (ppu->scanLineSprites - ppu->oam[oamIndices[j]]))));
-              bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + (((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) + 1) << 4) + (7 - ((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) + 8))));      
-            } else if((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) > 7){
-              bitPlane1 = readPpuBus(ppu, (spritePatternTableOffset + ((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) << 4) + (7 - ((ppu->scanLineSprites - ppu->oam[oamIndices[j]]) - 8))));
-              bitPlane2 = readPpuBus(ppu, (spritePatternTableOffset + ((((uint16_t) ppu->oam[oamIndices[j] + 1]) & 0xfe) << 4) + (7 - (ppu->scanLineSprites - ppu->oam[oamIndices[j]]))));    
-            }
-
-          }
-
-
-        }
-        
-        // checks to see if the sprite horizontal mirroring bit is set
-        if(getBit(ppu->oam[oamIndices[j] + 2], 6) == 0b01000000){
-          bitLo = getBit(bitPlane1, i - ppu->oam[oamIndices[j] + 3]);
-          bitHi = getBit(bitPlane2, i - ppu->oam[oamIndices[j] + 3]);
-          bitLo = bitLo >> (i - ppu->oam[oamIndices[j] + 3]);
-          bitHi = bitHi >> (i - ppu->oam[oamIndices[j] + 3]);
-        } else {
-          bitLo = getBitFromLeft(bitPlane1, i - ppu->oam[oamIndices[j] + 3]);
-          bitHi = getBitFromLeft(bitPlane2, i - ppu->oam[oamIndices[j] + 3]);
-          bitLo = bitLo >> findBit(bitLo);
-          bitHi = bitHi >> findBit(bitHi);
-        }
-
-
-
-        bitHi = bitHi << 1;
-        bitsCombined = bitHi | bitLo;
-
-        // if the colour isn't a transparency pixel, draw the pixel
-        if(bitsCombined != 0){
-
-          // if the background is transparent or the sprite is behind the backgrond, draw the pixel
-          if(bitsCombinedBackground == 0 || getBit(ppu->oam[oamIndices[j] + 2], 5) == 0){
-          // fetch sprite palette index from oam memory and set palette
-            spritePaletteIndex = getBit(ppu->oam[oamIndices[j] + 2], 0);
-            spritePaletteIndex = spritePaletteIndex | getBit(ppu->oam[oamIndices[j] + 2], 1);
-
-            tempPalette[0] = readPpuBus(ppu, 0x3f10 + 0 + (spritePaletteIndex * 4));
-            tempPalette[1] = readPpuBus(ppu, 0x3f10 + 1 + (spritePaletteIndex * 4));
-            tempPalette[2] = readPpuBus(ppu, 0x3f10 + 2 + (spritePaletteIndex * 4));
-            tempPalette[3] = readPpuBus(ppu, 0x3f10 + 3 + (spritePaletteIndex * 4));
-
-            ppu->frameBuffer[ppu->scanLine][i] = ppu->palette[tempPalette[bitsCombined]];
-          }
-
-         // sprite zero hit detection
-          if(oamIndices[j] == 0 && bitsCombinedBackground != 0 && getBit(ppu->mask, 4) != 0 && getBit(ppu->status, 6) == 0 && i != 255){
-            ppu->status = setBit(ppu->status, 6);
-          }
-        }
-
-
-        // sprite priority implementation
-        //   break if the the current pixel's sprite is not transparent, not drawing any further pixels ontop of it and ending iterating 
-        //   through the sprites.
-        if(bitsCombined != 0){
-          break;
-
-        }
-    }
-  }
-  }
-  }
-
-  // if background rendering is enabled, increment v
-  if(getBit(ppu->mask, 3) != 0){
-    // hori(v) = hori(t)
-    ppu->vregister.vcomp.courseX = ppu->tregister.vcomp.courseX;
-    ppu->vregister.vcomp.nameTableSelect = getBit(ppu->vregister.vcomp.nameTableSelect, 1) | getBit(ppu->tregister.vcomp.nameTableSelect, 0);
-
-    incrementY(ppu);
-  
-    // gets shift registers ready for next scanline; fetches the first two tiles of the next line
-    fetchFirstTwoTiles(ppu);
-  }
- 
-}
-
-
+// incrementY()
+// increments Y component of the v register
 void incrementY(PPU* ppu){
   if(ppu->vregister.vcomp.fineY < 7){
     ppu->vregister.vcomp.fineY++;
@@ -1429,105 +1161,6 @@ void incrementCourseX(PPU* ppu){
     }
   
 }
-
-
-
-
-
-void fetchFirstTwoTiles(PPU* ppu){
-
-  
-  uint16_t patternTableIndice;
-  uint16_t tempV;
-  uint8_t attributeTableByte;
-  uint16_t patternTableOffset = 0;
-
-  if(getBit(ppu->ctrl, 4) == 0){
-    patternTableOffset = 0;
-  } else if (getBit(ppu->ctrl, 4) != 0){
-    patternTableOffset = 0x1000;
-  }
-
-
-  fillTempV(&tempV, ppu->vregister.vcomp);
-
-  // fetch nametable
-  patternTableIndice = readPpuBus(ppu, 0x2000 + tempV);
-
-
-  // fetch attribute table byte 
-  attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV & 0x0c00) | ((tempV >> 4) & 0x38) | ((tempV >> 2) & 0x07));
-  attributeTableByte = findAndReturnAttributeByte(tempV, attributeTableByte);
-
-  // copies attributetablebyte to 8 positions in attributeData1 and 2
-  for(int j = 0; j < 8; ++j){
-    if(getBit(attributeTableByte, 0) == 1){
-      ppu->attributeData1 = setBit16bit(ppu->attributeData1, j);
-    } else if(getBit(attributeTableByte, 0) == 0){
-      ppu->attributeData1 = clearBit16bit(ppu->attributeData1, j);
-    }
-
-    if(getBit(attributeTableByte, 1) == 0b10){
-      ppu->attributeData2 = setBit16bit(ppu->attributeData2, j);
-    } else if(getBit(attributeTableByte, 1) == 0){
-      ppu->attributeData2 = clearBit16bit(ppu->attributeData2, j);
-    }
-
-  }
-  ppu->attributeData1 = ppu->attributeData1 << 8;
-  ppu->attributeData2 = ppu->attributeData2 << 8;
-
-    // fetch low and high bitplanes of patterntable
-  ppu->bitPlane1 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY));
-  ppu->bitPlane1 = ppu->bitPlane1 << 8;
-
-  ppu->bitPlane2 = readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY + 8));
-  ppu->bitPlane2 = ppu->bitPlane2 << 8;
-
-  incrementCourseX(ppu);
-
-
-
-  fillTempV(&tempV, ppu->vregister.vcomp);
-    // fetch pattern table ID
-  patternTableIndice = readPpuBus(ppu, 0x2000 + tempV);
-
-    // fetch attribute table byte
-  attributeTableByte = readPpuBus(ppu, 0x23c0 | (tempV & 0x0c00) | ((tempV >> 4) & 0x38) | ((tempV >> 2) & 0x07));
-  attributeTableByte = findAndReturnAttributeByte(tempV, attributeTableByte);
-  for(int j = 0; j < 8; ++j){
-    if(getBit(attributeTableByte, 0) == 1){
-      ppu->attributeData1 = setBit16bit(ppu->attributeData1, j);
-    } else if(getBit(attributeTableByte, 0) == 0){
-      ppu->attributeData1 = clearBit16bit(ppu->attributeData1, j);
-    }
-
-    if(getBit(attributeTableByte, 1) == 0b10){
-      ppu->attributeData2 = setBit16bit(ppu->attributeData2, j);
-    } else if(getBit(attributeTableByte, 1) == 0){
-      ppu->attributeData2 = clearBit16bit(ppu->attributeData2, j);
-    }
-
-  }
-
-
-    // fetch low and high bitplanes of patterntable
-  ppu->bitPlane1 = ppu->bitPlane1 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY));
-  ppu->bitPlane2 = ppu->bitPlane2 | readPpuBus(ppu, (patternTableOffset + (patternTableIndice << 4) + ppu->vregister.vcomp.fineY + 8));
-
-
-   
-  incrementCourseX(ppu);
-
- 
-
-
-}
-
-
-
-
-
 
 
 
