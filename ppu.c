@@ -415,7 +415,6 @@ uint8_t backgroundOutputProcess(PPU* ppu){
         printf("\t drawing a pixel \n");
 
         #endif
-    
         // fetch data from shift registers for the current pixel
         currentAttributeDataLo = 0;
         currentAttributeDataLo = (getBitFromLeft16bit(ppu->attributeData1, ppu->xregister));
@@ -443,6 +442,13 @@ uint8_t backgroundOutputProcess(PPU* ppu){
 
         finalBackgroundPixel = bitsCombinedBackground | (currentAttributeData << 2);
 
+        // if backgrounds are disabled in first 8px column, output a zero
+        if(ppu->dotx <= 8 && getBit(ppu->mask, 1) == 0){
+          finalBackgroundPixel = 0;
+          bitsCombinedBackground = 0;
+
+        }
+
         // find 24Bit rgb value and set the current pixel value to this
        // bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx] = bus->ppu->palette[tempPalette[bitsCombined]];
        // printf("\t shifter value while drawing pixel Lo: %x Hi: %x \n", bus->ppu->bitPlane1, bus->ppu->bitPlane2);
@@ -462,7 +468,7 @@ uint8_t backgroundOutputProcess(PPU* ppu){
 
 #define TICKPPUDEBUGLOG 0
 
-// TODO: implement dot based renderer
+
 void tickPpu(Bus* bus){
   // 1 PPU cycle = 1 dot
 
@@ -498,6 +504,8 @@ void tickPpu(Bus* bus){
 
   printf("dotx %d \n", bus->ppu->dotx);
   #endif
+
+
   // excludes the fineY component so that V can be used in our equations
   fillTempV(&tempV, bus->ppu->vregister.vcomp);
   
@@ -524,7 +532,6 @@ void tickPpu(Bus* bus){
           if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
             if(bitsCombined != 0 && finalBackgroundPixel != 0){
               bus->ppu->status = setBit(bus->ppu->status, 6);
-              //printf("sprite zero occurs on scanline %d dot %d \n", bus->ppu->scanLine, bus->ppu->dotx);
               bus->ppu->spriteZeroOnThisScanline = 0;
             }
           }
@@ -542,6 +549,11 @@ void tickPpu(Bus* bus){
         if(bus->ppu->spriteShifters[i].xCoordinate > 0){
           bus->ppu->spriteShifters[i].xCoordinate--;
         }
+      }
+
+      if(bus->ppu->dotx <= 8 && getBit(bus->ppu->mask, 2) == 0){
+        finalSpritePixel = 0;
+
       }
 
     }
@@ -612,6 +624,10 @@ void tickPpu(Bus* bus){
           #if TICKPPUDEBUGLOG == 1
           printf("\t fetching nametable byte at %x \n", 0x2000 + tempV);
           #endif
+
+          if(bus->ppu->scanLine == 200){
+            printf("%x at %d \n", 0x2000 + tempV, bus->ppu->dotx);
+          }
           bus->ppu->nameTableByteLatch = readPpuBus(bus->ppu, 0x2000 + tempV);
 
         } else if(bus->ppu->dotx % 8 == 3){
@@ -687,24 +703,26 @@ void tickPpu(Bus* bus){
 
       if((bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256) || (bus->ppu->dotx >= 321 && bus->ppu->dotx <= 336)){
         if(bus->ppu->dotx % 8 == 0){
+
           incrementCourseX(bus->ppu);
+
         }
       }
       if(bus->ppu->dotx == 256){
+
       // printf("\t incrementing y \n");
         incrementY(bus->ppu);
+
 
       } else if(bus->ppu->dotx == 257){
         #if TICKPPUDEBUGLOG == 1
          printf("\t hori(v) = hori(t) \n");
          #endif
-        // if background rendering is enabled, increment v
-
-          // hori(v) = hori(t)
+ 
+        // hori(v) = hori(t)
         bus->ppu->vregister.vcomp.courseX = bus->ppu->tregister.vcomp.courseX;
         bus->ppu->vregister.vcomp.nameTableSelect = getBit(bus->ppu->vregister.vcomp.nameTableSelect, 1) | getBit(bus->ppu->tregister.vcomp.nameTableSelect, 0);
-        
-
+ 
       } 
     }
     
