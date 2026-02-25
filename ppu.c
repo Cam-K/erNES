@@ -625,9 +625,7 @@ void tickPpu(Bus* bus){
           printf("\t fetching nametable byte at %x \n", 0x2000 + tempV);
           #endif
 
-          if(bus->ppu->scanLine == 200){
-            printf("%x at %d \n", 0x2000 + tempV, bus->ppu->dotx);
-          }
+
           bus->ppu->nameTableByteLatch = readPpuBus(bus->ppu, 0x2000 + tempV);
 
         } else if(bus->ppu->dotx % 8 == 3){
