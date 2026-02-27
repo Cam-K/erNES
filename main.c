@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #include <cjson/cJSON.h>
 #include <dirent.h>
@@ -45,6 +46,8 @@
 #include <SDL2/SDL_timer.h>
 #include "general.h"
 #include "apu.h"
+#include <errno.h>
+
 
 #define MAX_STR 128
 
@@ -123,10 +126,11 @@ void freeAndExit(Bus*);
 
 int main(int argc, char* argv[]){
 
+
   
 
   uint8_t oppCode;
-
+  
 
 
   // general purpose iterator variables
@@ -151,7 +155,7 @@ int main(int argc, char* argv[]){
 
   FILE* fptr;
   printf("    ernes  Copyright (C) 2026  Cameron Kelly \n This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n This is free software, and you are welcome to redistribute it \n under certain conditions; type `show c' for details. \n");
-
+  
   // parsing command line arguments
   if(argc > 1){
     while((opt = getopt(argc, argv, "fjhnis")) != -1)

@@ -634,7 +634,6 @@ void halt(CPU* cpu){
 int adc(CPU* cpu, Bus* bus, AddrMode mode){
   
 
-  // TODO: redo the checkVFlag function;
   // might have every function have their own implementation of it
   uint8_t value;
   uint8_t prevA;

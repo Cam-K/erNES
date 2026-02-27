@@ -224,9 +224,10 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
           bus->ppu->tregister.vcomp.fineY = (val & 0x07);
           bus->ppu->wregister = 0;
         }
+        
         break;
       case 0x2006:
-
+      
          if(bus->ppu->wregister == 0){
 
           bus->ppu->tregister.vreg = (((uint16_t)val & 0x3f) << 8);
@@ -241,7 +242,6 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         
         break;
       case 0x2007:
-        
         writePpuBus(bus->ppu, bus->ppu->vregister.vreg, val);
         if(getBit(bus->ppu->ctrl, 2) == 0){
           bus->ppu->vregister.vreg++;

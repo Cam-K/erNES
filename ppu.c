@@ -293,18 +293,6 @@ void printNameTable(Bus* bus){
 
 }
 
-int getEightSixteen(PPU* ppu){
-
-  if(getBit(ppu->ctrl, 5) == 0){
-    return 0;
-
-  // if bit 5 of the ppuctrl is set, enable 8x16 sprites
-  } else if (getBit(ppu->ctrl, 5) != 0){
-    return 1;
-    
-  }
-  return -1;
-}
 
 // copyMmc1()
 //   meant to copy a set of MMC1 registers from one struct to another
@@ -317,53 +305,6 @@ void copyMmc1(MMC1* src, MMC1* dest){
 }
 
 
-// spriteEvaluation()
-//    performs a sprite evaluation on the PPU's OAM
-// input:
-//   ppu - ppu to function on
-//   eightSixteenSpriteFlag - whether the game is an 8x8 or 8x16 sprite game
-// output:
-//   oamIndices - output array of oam indices
-// return:
-//   amount of sprites found on the current scanline
-int spriteEvaluation(PPU* ppu, uint8_t* oamIndices, int eightSixteenSpriteFlag){
-  int spriteEvalCounter = 0;
-
-
-  for(uint16_t i = 0; i < 256; i = i + 4){
-
-    // ppu->oam[i] gets the Y coordinate of the tile
-    
-    if(eightSixteenSpriteFlag == 0){
-      if(ppu->oam[i] <= ppu->scanLineSprites && ppu->oam[i] + 7 >= ppu->scanLineSprites){
-        oamIndices[spriteEvalCounter] = (uint8_t) i;
-        spriteEvalCounter++;
-      }
-    } else if(eightSixteenSpriteFlag == 1){
-      if(ppu->oam[i] <= ppu->scanLineSprites && ppu->oam[i] + 15 >= ppu->scanLineSprites){
-        oamIndices[spriteEvalCounter] = i;
-        spriteEvalCounter++;
-      }
-    }
-
-    if(spriteEvalCounter >= 8){
-      if(spriteEvalCounter == 8){
-        continue;
-      }
-
-      if(spriteEvalCounter >= 9){
-        ppu->status = setBit(ppu->status, 5);
-        spriteEvalCounter = 8;
-      }
-      break;
-    }
-
-  }
-
-  return spriteEvalCounter;
-
-
-}
 
 
 // function to parse the approriate sprite shifter, with number

@@ -76,7 +76,7 @@ uint8_t bitToBitNum(uint8_t val){
 // these sets of functions get the bit starting from the left,
 //      
 uint8_t getBitFromLeft(uint8_t val, uint8_t bitNum){
-  return (val & 0b10000000 >> bitNum);
+  return val & (0b10000000 >> bitNum);
 }
 
 uint8_t clearBitFromLeft(uint8_t val, uint8_t bitNum){
@@ -89,7 +89,7 @@ uint8_t setBitFromLeft(uint8_t val, uint8_t bitNum){
 
 uint16_t getBitFromLeft16bit(uint16_t val, uint8_t bitNum){
  
-  return (val & 0b1000000000000000 >> bitNum);
+  return val & (0b1000000000000000 >> bitNum);
 }
 
 
