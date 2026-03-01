@@ -124,8 +124,8 @@ void initBus(Bus* bus, uint16_t banks){
   } else if (banks == 0){
     bus->memArr = calloc(1, sizeof(Mem));
   }
-  bus->cpu = malloc(sizeof(CPU));
-  bus->ppu = malloc(sizeof(PPU));
+  bus->cpu = calloc(1, sizeof(CPU));
+  bus->ppu = calloc(1, sizeof(PPU));
   bus->apu = calloc(1, sizeof(APU));
   bus->numOfBlocks = banks;
   bus->controller1.latchedButtons = 0x00;

@@ -970,6 +970,8 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
               case SDL_QUIT:
+                SDL_DestroyRenderer(renderer);
+                SDL_DestroyTexture(texture);
                 SDL_Quit(); 
                 freeAndExit(bus);
                 break;
@@ -1420,13 +1422,16 @@ void freeAndExit(Bus* bus){
     free(bus->ppu->ppubus->memArr[i].contents);
   }
   free(bus->ppu->ppubus->memArr);
+
   free(bus->ppu->ppubus);
   free(bus->ppu);
   free(bus->cpu);
   free(bus->apu);
   
 
-  
+  for(int i = 0; i < bus->numOfBlocks; ++i){
+    free(bus->memArr[i].contents);
+  }
   free(bus->memArr);
   
   exit(0);
