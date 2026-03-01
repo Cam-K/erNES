@@ -1,35 +1,45 @@
-CC=gcc
-WCC=x86_64-w64-mingw32-gcc-10-posix
-CFLAGS= `sdl2-config --cflags --libs` -lcjson -I. -I/usr/include -I/usr/include/x86_64-linux-gnu -g -O1 -lm 
+CC = gcc
+# Uncomment for cross compiling the windows port
+# CC = x86_64-w64-mingw32-gcc-posix
+CFLAGS = `sdl2-config --cflags` -I. -g -O1 
+LDFLAGS = `sdl2-config --libs` -lcjson -lm 
+TARGET = ernes
+BUILDDIR = ./build
 
-all: general.o memory.o cpu.o ppu.o main.o apu.o
-	$(CC) general.o cpu.o memory.o ppu.o main.o apu.o $(CFLAGS) -o ernes
+
+all: prebuild general.o memory.o cpu.o ppu.o main.o apu.o
+	$(CC) $(BUILDDIR)/general.o $(BUILDDIR)/cpu.o $(BUILDDIR)/memory.o $(BUILDDIR)/ppu.o $(BUILDDIR)/main.o $(BUILDDIR)/apu.o -o $(BUILDDIR)/$(TARGET) $(LDFLAGS)
 
 cpu.o: cpu.c 
-	$(CC) $(CFLAGS) -c cpu.c
+	$(CC) -o $(BUILDDIR)/cpu.o $(CFLAGS) -c cpu.c 
 
 memory.o: memory.c 
-	$(CC) $(CFLAGS) -c memory.c
+	$(CC) -o $(BUILDDIR)/memory.o $(CFLAGS) -c memory.c
 
 main.o: main.c
-	$(CC) $(CFLAGS) -c main.c 
+	$(CC) -o $(BUILDDIR)/main.o $(CFLAGS) -c main.c 
 
 ppu.o: ppu.c
-	$(CC) $(CFLAGS) -c ppu.c
+	$(CC) -o $(BUILDDIR)/ppu.o $(CFLAGS) -c ppu.c
 
 general.o: general.c
-	$(CC) $(CFLAGS) -c general.c
+	$(CC) -o $(BUILDDIR)/general.o $(CFLAGS) -c general.c
 
 apu.o: apu.c
-	$(CC) $(CFLAGS) -c apu.c
-
-
-
-
-runwfile:
-	
+	$(CC) -o $(BUILDDIR)/apu.o $(CFLAGS) -c apu.c
 
 clean:
-	rm *.o ernes
+	rm -r ./build
+
+prebuild: 
+	-mkdir $(BUILDDIR)
+
+
+
+windows: CC=x86_64-w64-mingw32-gcc-posix 
+windows: TARGET=ernes.exe 
+windows: all
+	
+	
 
 

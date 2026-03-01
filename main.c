@@ -20,20 +20,19 @@
 
 */
 
-
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_video.h>
 #include <stdint.h>
-#include <bits/getopt_core.h>
-#include <linux/limits.h>
+
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/resource.h>
 #include <unistd.h>
 #include <cjson/cJSON.h>
 #include <dirent.h>
@@ -421,7 +420,7 @@ void startNes(char* romPath, int screenScaling){
   printf("Starting NES emulator \n");
 
   FILE* romPtr; 
-  char byte;
+  unsigned char byte;
   Bus bus;
   int wrongFileFlag = 0;
   int numOfPrgRoms;
@@ -447,7 +446,7 @@ void startNes(char* romPath, int screenScaling){
 
   renderer = SDL_CreateRenderer(win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
-  romPtr = fopen(romPath, "r");
+  romPtr = fopen(romPath, "rb");
 
   SDL_SetWindowMinimumSize(win, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling);
 
@@ -1424,6 +1423,8 @@ void freeAndExit(Bus* bus){
   free(bus->ppu->ppubus);
   free(bus->ppu);
   free(bus->cpu);
+  free(bus->apu);
+  
 
   
   free(bus->memArr);
