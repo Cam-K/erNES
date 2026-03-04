@@ -189,6 +189,13 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
 void writeBus(Bus* bus, uint16_t addr, uint8_t val){
   int prevVal;
   
+
+  // the reason why writeBus() and readBus() tick the PPU is because this allows us to get cycle-level grainularity
+  // without having a cpu emulator that is cycle-accurate.
+  tickPpu(bus);
+  tickPpu(bus);
+  tickPpu(bus);
+
   if(addr <= 0x07ff){
     bus->memArr[0].contents[addr] = val;
   } else if(addr >= 0x0800 && addr <= 0x0fff){
@@ -472,6 +479,14 @@ uint8_t readBus(Bus* bus, uint16_t addr){
   //printf("Reading address %x \n", addr);
   uint8_t temp = 0;
   uint16_t temp16 = 0;
+
+  // the reason why writeBus() and readBus() tick the PPU is because this allows us to get cycle-level grainularity
+  // without having a cpu emulator that is cycle-accurate.
+  tickPpu(bus);
+  tickPpu(bus);
+  tickPpu(bus);
+
+
   if(bus->numOfBlocks == 0){
     return 0;
 

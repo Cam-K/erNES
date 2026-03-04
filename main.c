@@ -46,6 +46,8 @@
 #include "general.h"
 #include "apu.h"
 #include <errno.h>
+#include <gtk-3.0/gtk/gtk.h>
+
 
 
 #define MAX_STR 128
@@ -115,7 +117,7 @@ typedef struct aft {
 
 TestResults* jsonTesterParallel(char**, Bus*, int, int);
 void startNes(char*, int);
-void nesMainLoop(Bus*, SDL_Renderer*, SDL_Texture*, int);
+void nesMainLoop(Bus*);
 void freeAndExit(Bus*);
 
 
@@ -154,6 +156,7 @@ int main(int argc, char* argv[]){
 
   FILE* fptr;
   printf("    ernes  Copyright (C) 2026  Cameron Kelly \n This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n This is free software, and you are welcome to redistribute it \n under certain conditions; type `show c' for details. \n");
+  
   
   // parsing command line arguments
   if(argc > 1){
@@ -195,9 +198,7 @@ int main(int argc, char* argv[]){
           
       }
     } 
-  } else {
-    printHelp();
-  }
+  } 
   
   if(hFlag == 1){
     printHelp();
@@ -280,6 +281,12 @@ int main(int argc, char* argv[]){
 
     interpreter(&bus);
 
+
+  }
+
+  // default to nes mode when no flags are specified, and open file diaglog box
+  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0){
+     
 
   }
 
@@ -440,15 +447,8 @@ void startNes(char* romPath, int screenScaling){
     screenScaling = 1;
   }
 
-  SDL_Window* win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling, SDL_WINDOW_RESIZABLE);
-  SDL_Renderer *renderer;
-  SDL_Texture *texture;
-
-  renderer = SDL_CreateRenderer(win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
   romPtr = fopen(romPath, "rb");
 
-  SDL_SetWindowMinimumSize(win, WINDOW_WIDTH * screenScaling, WINDOW_HEIGHT * screenScaling);
 
 
   if(romPtr == NULL){
@@ -595,16 +595,8 @@ void startNes(char* romPath, int screenScaling){
       }
 
       bus.ppu->mirroring = mirroring;
-
-      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-      }
-
-      SDL_RenderClear(renderer);
-      SDL_RenderPresent(renderer);
-      printf("SDL initialized! \n");
  
-      nesMainLoop(&bus, renderer, texture, screenScaling);
+      nesMainLoop(&bus);
       break;
     
 
@@ -698,18 +690,10 @@ void startNes(char* romPath, int screenScaling){
 
 
 
-      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-      }
-
-      SDL_RenderClear(renderer);
-      SDL_RenderPresent(renderer);
-      printf("SDL initialized! \n");
-  
       bus.ppu->mirroring = mirroring;
 
       // once machine has been setup to the mapper's needs, enter main loop
-      nesMainLoop(&bus, renderer, texture, screenScaling);
+      nesMainLoop(&bus);
 
       break;
     case 2:
@@ -755,18 +739,10 @@ void startNes(char* romPath, int screenScaling){
 
 
 
-      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-      }
-
-      SDL_RenderClear(renderer);
-      SDL_RenderPresent(renderer);
-      printf("SDL initialized! \n");
-  
       bus.ppu->mirroring = mirroring;
 
       // once machine has been setup to the mapper's needs, enter main loop
-      nesMainLoop(&bus, renderer, texture, screenScaling);
+      nesMainLoop(&bus);
 
       break;
     case 3:
@@ -804,19 +780,11 @@ void startNes(char* romPath, int screenScaling){
       bus.ppu->mapper = bus.mapper;
 
 
-
-      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-      }
-
-      SDL_RenderClear(renderer);
-      SDL_RenderPresent(renderer);
-      printf("SDL initialized! \n");
   
       bus.ppu->mirroring = mirroring;
 
       // once machine has been setup to the mapper's needs, enter main loop
-      nesMainLoop(&bus, renderer, texture, screenScaling);
+      nesMainLoop(&bus);
 
       break;
     case 7:
@@ -855,16 +823,9 @@ void startNes(char* romPath, int screenScaling){
       resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
-      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("error initializing SDL: %s\n", SDL_GetError());
-      }
-
-      SDL_RenderClear(renderer);
-      SDL_RenderPresent(renderer);
-      printf("SDL initialized! \n");
   
       bus.ppu->mirroring = mirroring;
-      nesMainLoop(&bus, renderer, texture, screenScaling);
+      nesMainLoop(&bus);
 
       break;
     default:
@@ -888,7 +849,11 @@ void startNes(char* romPath, int screenScaling){
 // nesMainLoop()
 //   decodes and executes 1 scanline worth of instructions, then instructs ppu to render the scanline
 //   once a 240 scanlines have been rendered, draw framebuffer to SDL and enable a vblank
-void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int screenScaling){
+
+
+// TODO: Ensure that each instruction consumes the right amount of reads/writes because
+// ticking the rest of the system now relies on this being correct.
+void nesMainLoop(Bus* bus){
       uint8_t oppCode;
       int mirroring = bus->ppu->mirroring;
       SDL_Event event;
@@ -907,71 +872,41 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
       int currCycles;
 
 
+      bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
+      
+
+      bus->ppu->renderer = SDL_CreateRenderer(bus->ppu->win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+      bus->ppu->texture = SDL_CreateTexture(bus->ppu->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+      if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("error initializing SDL: %s\n", SDL_GetError());
+      }
+
+      SDL_RenderClear(bus->ppu->renderer);
+      SDL_RenderPresent(bus->ppu->renderer);
 
       // enter main loop
       while(1){
         if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           checkForInterrupts(bus);
           oppCode = readBus(bus, bus->cpu->pc);
-          currCycles = decodeAndExecute(bus->cpu, bus, oppCode);
-          bus->cpu->cycles += currCycles;
-
-          // for every cpu cycle, tick the PPU 3 times
-          for(int i = 0; i < currCycles; ++i){
-            tickPpu(bus);
-            tickPpu(bus);
-            tickPpu(bus);
-          }
+          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
          
           //printf("cycles total: %d \n", bus->cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
-
-          if(bus->ppu->scanLine == 1){
+          if(bus->ppu->scanLine == 0){
             frame_start = SDL_GetPerformanceCounter();
 
           }
             
+            
           if(bus->ppu->scanLine == 261){
 
-            drawFrameBuffer(bus->ppu, renderer, texture);
-
-            // after prerenderscanline, mark the end of the frame, then delay until the next frame is drawn
-            frame_end = SDL_GetPerformanceCounter();
-            elasped_ms = (frame_end - frame_start) * 1000.0 / freq;
-            if(elasped_ms < target_frame_time){
-              SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
-            }
-
-            sdlFrames++;
-            if(fps_lastTime < SDL_GetTicks() - 1000){
-              fps_lastTime = SDL_GetTicks();
-              fps_current = sdlFrames;
-              sdlFrames = 0;
-              if(fps_current != 1){
-                printf("fps: %d \n", fps_current);
-              }
-
-            }
-          if(processLightGunInput >= 1 && processLightGunInput <= 2){
-            printf("frame processed %d \n", bus->ppu->frames);
-            printf("%x \n", bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling]);
-            if(bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffffff || bus->ppu->frameBuffer[mouseY / screenScaling][mouseX / screenScaling] == 0xffc6c3){
-              bus->controller2.lightSensor = 0;
-              processLightGunInput = 0;
-              printf("detected! \n");
-  
-            } else {
-              bus->controller2.lightSensor = 1;
-              processLightGunInput++;
-            }
-          }
 
         // polls for events at the end of each prerender scanline (once per frame)
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
               case SDL_QUIT:
-                SDL_DestroyRenderer(renderer);
-                SDL_DestroyTexture(texture);
                 SDL_Quit(); 
                 freeAndExit(bus);
                 break;
@@ -1001,6 +936,11 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                     break;
                   case SDLK_RIGHT:
                     bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
+                    break;
+                  case SDLK_r:
+                      reset(bus->cpu, bus);
+                      resetPpu(bus->ppu, 1);
+                      resetApu(bus->apu);
                     break;
 
                 }
@@ -1038,7 +978,6 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
                   processLightGunInput = 1;
                   mouseX = event.motion.x;
                   mouseY = event.motion.y;
-                  printf("frame received %d \n", bus->ppu->frames);
                   bus->controller2.triggerPulled = 1;
                   break;
                   
@@ -1057,10 +996,6 @@ void nesMainLoop(Bus* bus, SDL_Renderer* renderer, SDL_Texture* texture, int scr
 
           bus->cpu->cycles = 0;
 
-          if(bus->ppu->scanLine == 262){
-            bus->ppu->scanLine = 0;
-            bus->ppu->scanLineSprites = -1;
-          }
           if(bus->ppu->frames >= 20){
              //freeAndExit(bus);
           }

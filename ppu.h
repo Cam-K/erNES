@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "memory.h"
 #include "general.h"
+#include <SDL2/SDL_video.h>
 #include <stdint.h>
 #include <SDL2/SDL.h>
 
@@ -59,6 +60,16 @@ union VRegister {
   struct VComponent vcomp;
 
 };
+struct SDLObjects {
+
+
+  SDL_Window* win;
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
+
+
+
+};
 
 typedef struct _SecondaryOAM {
   uint8_t data[32];
@@ -73,6 +84,18 @@ typedef struct _OamIndices{
   unsigned int m : 2;
 
 } OAMIndices;
+
+struct FrameRendering {
+  uint64_t freq;
+  uint64_t frame_start;
+  uint64_t frame_end;
+  double elasped_ms;
+
+  
+  
+
+
+};
 
 typedef struct _SpriteShifter{
 
@@ -232,6 +255,16 @@ typedef struct _PPU {
   // state machine for keeping track of sprite evaluation step (used in multiple places)
   int spriteEvaluationStateMachine;
 
+  SDL_Window* win;
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
+
+
+  struct FrameRendering frameRendering;
+
+
+  
+
 
 
 } PPU;
@@ -265,7 +298,7 @@ int spriteEvaluation(PPU*, uint8_t*, int);
 int getEightSixteen(PPU*);
 
 // draws the completed framebuffer to screen in SDL
-void drawFrameBuffer(PPU*, SDL_Renderer*, SDL_Texture*);
+void drawFrameBuffer(PPU*);
 
 
 void incrementCourseX(PPU*);

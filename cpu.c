@@ -948,11 +948,14 @@ int brki(CPU* cpu, Bus* bus){
   // break flag set to be prepared when pushed onto the stack
   cpu->pf = setBit(cpu->pf, 4);
 
- 
+  // dummy read 
+  readBus(bus, ++cpu->pc);
+
+
   uint16_t temp;
 
   // push the msb and lsb of the program counter+2 onto the stack
-  temp = cpu->pc + 2;
+  temp = cpu->pc + 1;
   pushStack(cpu, bus, (uint8_t)((temp & 0xff00) >> 8));
   pushStack(cpu, bus, (uint8_t)(temp & 0x00ff));
   //printf("Push Stack: %x \n", (uint8_t)((temp & 0xff00) >> 8));
@@ -986,7 +989,9 @@ int bvc(CPU* cpu, Bus* bus){
   int8_t offset;
   uint16_t page = cpu->pc & 0xff00;
   int cycles = 2;
+
   offset = addressModeDecode(cpu, bus, relative);
+  readBus(bus, cpu->pc);
   if(!getBit(cpu->pf, V)){
     cpu->pc += offset;
   }
@@ -1428,7 +1433,6 @@ int nop(CPU* cpu){
 
 int ora(CPU* cpu, Bus* bus, AddrMode mode){
   uint8_t value = addressModeDecode(cpu, bus, mode);
-  //printf("Doing ORA operation on %x \n", value);
   cpu->a = cpu->a | value;
   checkNFlag(cpu, cpu->a);
   checkZFlag(cpu, cpu->a);
@@ -1458,6 +1462,11 @@ int ora(CPU* cpu, Bus* bus, AddrMode mode){
 }
 
 int pha(CPU* cpu, Bus* bus){
+
+  // dummy cpu read
+  readBus(bus, cpu->pc);
+
+
   pushStack(cpu, bus, cpu->a);
   cpu->pc++;
   return 3;
@@ -1465,6 +1474,9 @@ int pha(CPU* cpu, Bus* bus){
 
 
 int php(CPU* cpu, Bus* bus){
+  // dummy read
+  readBus(bus, cpu->pc);
+
   uint8_t val;
   val = setBit(cpu->pf, B);
   pushStack(cpu, bus, val);  
@@ -1474,6 +1486,10 @@ int php(CPU* cpu, Bus* bus){
 
 
 int pla(CPU* cpu, Bus* bus){
+
+  // dummy read
+  readBus(bus, cpu->pc);
+
   cpu->a = popStack(cpu, bus);
   //printf("cpu->pf in pla: %d \n", cpu->pf);
   checkNFlag(cpu, cpu->a);
@@ -1566,6 +1582,10 @@ int rti(CPU* cpu, Bus* bus){
 
 
 
+  // dummy cpu read
+  readBus(bus, cpu->pc);
+
+
   cpu->pf = popStack(cpu, bus);
   cpu->pf = setBit(cpu->pf, U);
   cpu->pc = (uint16_t)popStack(cpu, bus);
@@ -1585,6 +1605,11 @@ int rti(CPU* cpu, Bus* bus){
 }
 
 int rts(CPU* cpu, Bus* bus){
+
+  // dummy cpu read
+  readBus(bus, cpu->pc);
+
+
   cpu->pc = (uint16_t) popStack(cpu, bus);
   cpu->pc += (uint16_t) popStack(cpu, bus) << 8;
   cpu->pc++;
@@ -1897,6 +1922,7 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       lowByte = readBus(bus, ++cpu->pc);
       highByte = readBus(bus, ++cpu->pc);
+      
 
       return readBus(bus, (highByte << 8) + lowByte);
 

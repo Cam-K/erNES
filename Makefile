@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = `sdl2-config --cflags` -I. -g -O1 
-LDFLAGS = `sdl2-config --libs` -lcjson -lm 
+CFLAGS = `sdl2-config --cflags` -I. -g -O1 `pkg-config --cflags gtk+-3.0`
+LDFLAGS = `sdl2-config --libs` -L. -lcjson -lm `pkg-config --libs gtk+-3.0`
 TARGET = ernes
 BUILDDIR = ./build
 
@@ -27,7 +27,7 @@ $(BUILDDIR)/apu.o: apu.c
 	$(CC) -o $(BUILDDIR)/apu.o $(CFLAGS) -c apu.c
 
 clean:
-	rm -r ./build
+	-rm -r ./build
 
 prebuild: 
 	-mkdir $(BUILDDIR)
@@ -35,8 +35,10 @@ prebuild:
 
 
 windows: CC=x86_64-w64-mingw32-gcc-posix 
+windows: CFLAGS = `sdl2-config --cflags` -I. -g -O1 
+windows: LDFLAGS = `sdl2-config --libs` -L. -lcjson -lm 
 windows: TARGET=ernes.exe 
-windows: all
+windows: clean all
 	
 	
 

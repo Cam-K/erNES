@@ -50,9 +50,9 @@ void initPpu(PPU* ppu, int banks){
   }
   ppu->ppubus->numOfBlocks = banks;
   printf("initializing PPU \n");
-  ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_WIDTH);
+  ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_HEIGHT);
   
-  for(int i = 0; i < 242; ++i){
+  for(int i = 0; i < WINDOW_HEIGHT; ++i){
     ppu->frameBuffer[i] = calloc(WINDOW_WIDTH, sizeof(uint32_t));
   } 
 
@@ -67,6 +67,9 @@ void initPpu(PPU* ppu, int banks){
 
   ppu->scanLine = 0;
   ppu->frames = 0;
+  ppu->renderer = 0;
+  ppu->win = 0;
+  ppu->texture = 0;
 
 
   
@@ -122,6 +125,8 @@ void resetPpu(PPU* ppu, int powerFlag){
 
   ppu->spriteEvaluationStateMachine = 0;
   ppu->spriteLatchCounter = 0;
+
+  ppu->frameRendering.freq = SDL_GetPerformanceFrequency();
   
   for(int i = 0; i < 8; ++i){
 
@@ -255,14 +260,14 @@ void populatePalette(PPU* ppu){
 // drawFramebuffer()
 //   draws Framebuffer to background layer in sdl 
 //   also converts the nes colour palette to rgb values when reading from the frame buffer
-void drawFrameBuffer(PPU* ppu, SDL_Renderer* renderer, SDL_Texture* texture){
+void drawFrameBuffer(PPU* ppu){
   //printf("drawing framebuffer \n");
   uint32_t *pixels;
   int pitch;
 
 
-  SDL_RenderClear(renderer);
-  SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch);
+  SDL_RenderClear(ppu->renderer);
+  SDL_LockTexture(ppu->texture, NULL, (void**)&pixels, &pitch);
 
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
     for(int j = 0; j < WINDOW_WIDTH; ++j){
@@ -271,9 +276,9 @@ void drawFrameBuffer(PPU* ppu, SDL_Renderer* renderer, SDL_Texture* texture){
     }
   }
 
-  SDL_UnlockTexture(texture);
-  SDL_RenderCopy(renderer, texture, NULL, NULL);
-  SDL_RenderPresent(renderer);
+  SDL_UnlockTexture(ppu->texture);
+  SDL_RenderCopy(ppu->renderer, ppu->texture, NULL, NULL);
+  SDL_RenderPresent(ppu->renderer);
 
 }
 
@@ -346,6 +351,11 @@ uint8_t backgroundOutputProcess(PPU* ppu){
   uint16_t bitHi_16;
   uint8_t bitsCombinedBackground = 0;
   uint8_t finalBackgroundPixel = 0;
+
+
+
+
+
   // background output
   if(getBit(ppu->mask, 3) != 0){
     
@@ -437,6 +447,9 @@ void tickPpu(Bus* bus){
   uint8_t bitsCombinedBackground = 0;
   uint8_t spritePriority = 0;
   uint8_t tileIndex;
+  double elasped_ms;
+  const double target_fps = 60.0;
+  const double target_frame_time = 1000.0 / target_fps;
 
   #if TICKPPUDEBUGLOG == 1
   if(bus->ppu->dotx == 0){
@@ -446,6 +459,11 @@ void tickPpu(Bus* bus){
   printf("dotx %d \n", bus->ppu->dotx);
   #endif
 
+
+  if(bus->ppu->dotx == 0 && bus->ppu->scanLine == 0){
+
+    bus->ppu->frameRendering.frame_start = SDL_GetPerformanceCounter();
+  }
 
   // excludes the fineY component so that V can be used in our equations
   fillTempV(&tempV, bus->ppu->vregister.vcomp);
@@ -457,7 +475,7 @@ void tickPpu(Bus* bus){
     
   // ***** sprite output process ******* 
   if(getBit(bus->ppu->mask, 4) != 0){
-    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+    if(bus->ppu->scanLine >= 1 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
       finalSpritePixel = 0;
       bitsCombined = 0;
@@ -533,7 +551,6 @@ void tickPpu(Bus* bus){
         }
 
       }
-
       bus->ppu->frameBuffer[bus->ppu->scanLine][bus->ppu->dotx - 1] = bus->ppu->palette[readPpuBus(bus->ppu, 0x3f00 + finalPixel)];
     }
 
@@ -1043,6 +1060,25 @@ void tickPpu(Bus* bus){
      }  
 
   }
+
+  if(bus->ppu->dotx == 340 && bus->ppu->scanLine == 261){
+
+
+    drawFrameBuffer(bus->ppu);
+    bus->ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
+    
+    elasped_ms = (bus->ppu->frameRendering.frame_end - bus->ppu->frameRendering.frame_start) * 1000.0 / bus->ppu->frameRendering.freq;
+    if(elasped_ms < target_frame_time){
+
+      SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
+      
+    }
+    if(bus->ppu->frames % 100 == 0){
+      printf("%f \n", 1000 / ((target_frame_time - elasped_ms) + elasped_ms));
+
+    }
+
+  } 
 
   if(bus->ppu->dotx == 340){
     bus->ppu->dotx = 0;
