@@ -264,6 +264,9 @@ void drawFrameBuffer(PPU* ppu){
   //printf("drawing framebuffer \n");
   uint32_t *pixels;
   int pitch;
+  double elasped_ms;
+  const double target_fps = 60.0;
+  const double target_frame_time = 1000.0 / target_fps;
 
 
   SDL_RenderClear(ppu->renderer);
@@ -279,6 +282,21 @@ void drawFrameBuffer(PPU* ppu){
   SDL_UnlockTexture(ppu->texture);
   SDL_RenderCopy(ppu->renderer, ppu->texture, NULL, NULL);
   SDL_RenderPresent(ppu->renderer);
+
+
+  // delay until 16.6667 ms (time to render one frame) is up
+  ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
+    
+  elasped_ms = (ppu->frameRendering.frame_end - ppu->frameRendering.frame_start) * 1000.0 / ppu->frameRendering.freq;
+  if(elasped_ms < target_frame_time){
+
+    SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
+    
+  }
+  if(ppu->frames % 100 == 0){
+    printf("fps: %f \n", 1000 / ((target_frame_time - elasped_ms) + elasped_ms));
+
+  }
 
 }
 
@@ -1065,18 +1083,7 @@ void tickPpu(Bus* bus){
 
 
     drawFrameBuffer(bus->ppu);
-    bus->ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
-    
-    elasped_ms = (bus->ppu->frameRendering.frame_end - bus->ppu->frameRendering.frame_start) * 1000.0 / bus->ppu->frameRendering.freq;
-    if(elasped_ms < target_frame_time){
 
-      SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
-      
-    }
-    if(bus->ppu->frames % 100 == 0){
-      printf("%f \n", 1000 / ((target_frame_time - elasped_ms) + elasped_ms));
-
-    }
 
   } 
 

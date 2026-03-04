@@ -894,13 +894,9 @@ void nesMainLoop(Bus* bus){
          
           //printf("cycles total: %d \n", bus->cpu->cycles);
         } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
-          if(bus->ppu->scanLine == 0){
-            frame_start = SDL_GetPerformanceCounter();
-
-          }
             
             
-          if(bus->ppu->scanLine == 261){
+        if(bus->ppu->scanLine == 261){
 
 
         // polls for events at the end of each prerender scanline (once per frame)
