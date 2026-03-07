@@ -673,7 +673,6 @@ uint8_t readBus(Bus* bus, uint16_t addr){
             }
             // if bit 2 and 3 equals 2
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1000){
-            printf("16 kb first bank fixed mode \n");
             // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the first fixed bank
             uint8_t suRomMemArrOffset = 0;
             if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){

@@ -158,22 +158,6 @@ void dmaTransfer(Bus* bus){
     addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
     bus->ppu->oam[i] = readBus(bus, addr);
   }
-
-  // if cpu cycles are even, tick the ppu 1539 times, else tick it 1542 times, which is the length of the DMA
-  
-  if(bus->cpu->cycles % 2 == 0){
-    for(int i = 0; i < 1539; ++i){
-      tickPpu(bus);
-    }
-  } else {
-    for(int i = 0; i < 1542; ++i){
-      tickPpu(bus);
-    }
-
-  } 
-  
-  
-  
   
 }
 

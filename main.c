@@ -920,16 +920,14 @@ void nesMainLoop(Bus* bus){
 
       // enter main loop
       while(1){
-        if(bus->cpu->cycles < CPU_CYCLES_PER_SCANLINE){
           checkForInterrupts(bus);
           oppCode = readBus(bus, bus->cpu->pc);
           bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
          
           //printf("cycles total: %d \n", bus->cpu->cycles);
-        } else if(bus->cpu->cycles >= CPU_CYCLES_PER_SCANLINE){
             
             
-        if(bus->ppu->scanLine == 261){
+        if(bus->ppu->scanLine == 261 && bus->ppu->dotx <= 30){
 
 
         // polls for events at the end of each prerender scanline (once per frame)
@@ -1029,7 +1027,7 @@ void nesMainLoop(Bus* bus){
              //freeAndExit(bus);
           }
 
-      }
+      
         
 
  

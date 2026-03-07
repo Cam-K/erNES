@@ -71,7 +71,14 @@ void checkForInterrupts(Bus* bus){
 //
 int nmi(CPU* cpu, Bus* bus){
 
+  
   uint16_t temp;
+
+
+  // dummy reads
+  readBus(bus, cpu->pc);
+  readBus(bus, cpu->pc);
+
   //printf("cpu->pc at nmi %x \n", cpu->pc);
 
   // push the msb and lsb of the program counter onto the stack
