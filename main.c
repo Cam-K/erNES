@@ -45,7 +45,6 @@
 #include <SDL2/SDL_timer.h>
 #include "general.h"
 #include "apu.h"
-#include "gui.h"
 #include <errno.h>
 // #include <gtk-3.0/gtk/gtk.h>
 
