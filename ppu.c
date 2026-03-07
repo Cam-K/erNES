@@ -284,7 +284,7 @@ void drawFrameBuffer(PPU* ppu){
   SDL_RenderPresent(ppu->renderer);
 
 
-  // delay until 16.6667 ms (time to render one frame) is up
+  // delay until 16.6667 ms has elasped
   ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
     
   elasped_ms = (ppu->frameRendering.frame_end - ppu->frameRendering.frame_start) * 1000.0 / ppu->frameRendering.freq;
@@ -292,10 +292,6 @@ void drawFrameBuffer(PPU* ppu){
 
     SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
     
-  }
-  if(ppu->frames % 100 == 0){
-    printf("fps: %f \n", 1000 / ((target_frame_time - elasped_ms) + elasped_ms));
-
   }
 
 }

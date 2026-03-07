@@ -782,12 +782,20 @@ int asl(CPU* cpu, Bus* bus, AddrMode mode) {
       case accumulator:
         return 2;
       case zeroPage:
+        // dummy read
+        readBus(bus, cpu->pc);
         return 5;
       case zeroPageX:
+        // dummy read
+        readBus(bus, cpu->pc);
         return 6;
       case absolute:
+        readBus(bus, cpu->pc);
         return 6;
       case absoluteX:
+        // dummy read
+        readBus(bus, cpu->pc);
+        readBus(bus, cpu->pc);
         return 7;
       default:
         return -1;
@@ -802,7 +810,9 @@ int bcc(CPU* cpu, Bus* bus){
   page = cpu->pc & 0xff00;
   if(!getBit(cpu->pf, C)){
     cpu->pc += offset;
-  }
+  } 
+  // dummy read
+  readBus(bus, cpu->pc);
   cpu->pc++;
   if(page == (cpu->pc & 0xff00)){
     return 3;
@@ -822,7 +832,8 @@ int bcs(CPU* cpu, Bus* bus){
   if(getBit(cpu->pf, C)){
     cpu->pc += offset;
   }
-
+  // dummy read
+  readBus(bus, cpu->pc);
   cpu->pc++;
   if(page == (cpu->pc & 0xff00)){
     return 3;
@@ -841,6 +852,8 @@ int beq(CPU* cpu, Bus* bus){
   if(getBit(cpu->pf, Z) != 0){
     cpu->pc += offset;
   }
+  // dummy read
+  readBus(bus, cpu->pc);
   cpu->pc++;
   if(page == (cpu->pc & 0xff00)){
     return 3;
@@ -893,6 +906,8 @@ int bmi(CPU* cpu, Bus* bus){
     cpu->pc += offset;
     cycles += 1;
   }
+  // dummy read
+  readBus(bus, cpu->pc);
   if(page == (cpu->pc & 0xff00)){
     cycles += 2;
   }
@@ -912,6 +927,8 @@ int bne(CPU* cpu, Bus* bus){
     cpu->pc += offset;
     cycles = 3;
   }
+  // dummy read
+  readBus(bus, cpu->pc);
   if(page == (cpu->pc & 0xff00)){
     cycles += 2;
   }
@@ -930,6 +947,8 @@ int bpl(CPU* cpu, Bus* bus){
   if(!getBit(cpu->pf, N)){
     cpu->pc += offset;
   }
+  // dummy read
+  readBus(bus, cpu->pc);
 
   if(getBit(cpu->pf, N) != 0){
     cycles += 1;
@@ -991,10 +1010,12 @@ int bvc(CPU* cpu, Bus* bus){
   int cycles = 2;
 
   offset = addressModeDecode(cpu, bus, relative);
-  readBus(bus, cpu->pc);
+  
   if(!getBit(cpu->pf, V)){
     cpu->pc += offset;
   }
+  // dummy read
+  readBus(bus, cpu->pc);
 
   if(!getBit(cpu->pf, V)){
     cycles += 1;
@@ -1016,8 +1037,9 @@ int bvs(CPU* cpu, Bus* bus){
   if(getBit(cpu->pf, V)){
     cpu->pc += offset;
   }
-  //cpu->pc = (cpu->pc & 0xff00) | cpupclowbyte;
-  //
+  // dummy read
+  readBus(bus, cpu->pc);
+
   if(getBit(cpu->pf, V)){
     cycles += 1;
   }
@@ -1036,6 +1058,11 @@ int clc(CPU* cpu){
 
 
 int plp(CPU* cpu, Bus* bus){
+
+  // dummy reads
+  readBus(bus, cpu->pc);
+  readBus(bus, 0x1000 | cpu->sp);
+
   cpu->pf = popStack(cpu, bus);
   cpu->pf = setBit(cpu->pf, 5);
   cpu->pf = clearBit(cpu->pf, 4);
@@ -1161,12 +1188,17 @@ int dec(CPU* cpu, Bus* bus, AddrMode mode){
   cpu->pc++;
   switch(mode){
     case zeroPage:
+      readBus(bus, cpu->pc);
       return 5;
     case zeroPageX:
+      readBus(bus, cpu->pc);
       return 6;
     case absolute:
+      readBus(bus, cpu->pc);
       return 6;
     case absoluteX:
+      readBus(bus, cpu->pc);
+      readBus(bus, cpu->pc);
       return 7;
     default:
       return -1;
@@ -1232,12 +1264,18 @@ int inc(CPU* cpu, Bus* bus, AddrMode mode){
   cpu->pc++;
   switch(mode){
     case zeroPage:
+      readBus(bus, cpu->pc);
       return 5;
     case zeroPageX:
+      readBus(bus, cpu->pc);
       return 6;
     case absolute:
+      // dummy read
+      readBus(bus, cpu->pc);
       return 6;
     case absoluteX:
+      readBus(bus, cpu->pc);
+      readBus(bus, cpu->pc);
       return 7;
     default:
       return -1;
@@ -1274,8 +1312,7 @@ int jmp(CPU* cpu, Bus* bus, AddrMode mode){
 
   lowByte = readBus(bus, ++cpu->pc);
   highByte = readBus(bus, ++cpu->pc);
-  //printf("lowByte %d \n", lowByte);
-  //printf("highByte %d \n", highByte);
+
 
   addr = (highByte << 8) | (uint16_t)lowByte;
   if(mode == absolute){
@@ -1290,8 +1327,7 @@ int jmp(CPU* cpu, Bus* bus, AddrMode mode){
   } else {
     return 5;
   }
-  //printf("addr: %x \n", addr);
-  //printf("cpu->pc: %x \n", cpu->pc);
+
 }
 
 
@@ -1303,6 +1339,10 @@ int jsr(CPU* cpu, Bus* bus){
   uint8_t highByte;
   lowByte = readBus(bus, ++cpu->pc);
   highByte = readBus(bus, ++cpu->pc);
+
+
+  // internal operation
+  readBus(bus, 0x1000 | cpu->sp);
 
 
   //printf("Current pc: %x \n", cpu->pc);
@@ -1413,12 +1453,18 @@ int lsr(CPU* cpu, Bus* bus, AddrMode mode){
     case accumulator:
       return 2;
     case zeroPage:
+      readBus(bus, cpu->pc);
       return 5;
     case zeroPageX:
+      readBus(bus, cpu->pc);
       return 6;
     case absolute:
+      // dummy read
+      readBus(bus, cpu->pc);
       return 6;
     case absoluteX:
+      readBus(bus, cpu->pc);
+      readBus(bus, cpu->pc);
       return 7;
     default:
       return -1;
@@ -1465,6 +1511,7 @@ int pha(CPU* cpu, Bus* bus){
 
   // dummy cpu read
   readBus(bus, cpu->pc);
+  
 
 
   pushStack(cpu, bus, cpu->a);
@@ -1487,8 +1534,9 @@ int php(CPU* cpu, Bus* bus){
 
 int pla(CPU* cpu, Bus* bus){
 
-  // dummy read
+  // dummy reads
   readBus(bus, cpu->pc);
+  readBus(bus, 0x1000 | cpu->sp);
 
   cpu->a = popStack(cpu, bus);
   //printf("cpu->pf in pla: %d \n", cpu->pf);
@@ -1524,12 +1572,20 @@ int rol(CPU* cpu, Bus* bus, AddrMode mode){
     case accumulator:
       return 2;
     case zeroPage:
+      // dummy read
+      readBus(bus, cpu->pc);
       return 5;
     case zeroPageX:
+      // dummy read
+      readBus(bus, cpu->pc);
       return 6;
     case absolute:
+      readBus(bus, cpu->pc);
       return 6;
     case absoluteX:
+      // dummy read
+      readBus(bus, cpu->pc);
+      readBus(bus, cpu->pc);
       return 7;
     default:
       return -1;
@@ -1564,12 +1620,17 @@ int ror(CPU* cpu, Bus* bus, AddrMode mode){
     case accumulator:
       return 2;
     case zeroPage:
+      readBus(bus, cpu->pc);
       return 5;
     case zeroPageX:
+      readBus(bus, cpu->pc);
       return 6;
     case absolute:
+      readBus(bus, cpu->pc);
       return 6;
     case absoluteX:
+      readBus(bus, cpu->pc);
+      readBus(bus, cpu->pc);
       return 7;
     default:
       return -1;
@@ -1838,14 +1899,10 @@ int tya(CPU* cpu){
 }
 
 
-
-
 void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 
 
-  // TODO: fix cpu->pc incrementing; some addressing modes increment the pc differently and thus
-  // are incompatible with instructions that do not do an addressModeDecode first ex: stx, sty
-  // 
+
   uint16_t lowByte, highByte;
   uint8_t zeroPageAddr;
 
@@ -1866,6 +1923,10 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
       writeBus(bus, (highByte << 8) + lowByte + cpu->y, value);
       return;
     case accumulator:
+
+      // dummy read
+      readBus(bus, cpu->pc);
+
       cpu->a = value;
       return;
     case zeroPage:
@@ -1917,6 +1978,8 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
     case accumulator:
       return cpu->a;
     case relative:
+      // dummy read
+      readBus(bus, cpu->pc);
       return readBus(bus, ++cpu->pc);
       
     case absolute:
@@ -1935,7 +1998,11 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
         pageFlag = 0;
       } else {
         pageFlag = 1;
+
+        // dummy read
+        readBus(bus, (highByte << 8) + lowByte + cpu->x);
       }
+      
       return readBus(bus, (highByte << 8) + lowByte + cpu->x);
 
     case absoluteY:
@@ -1947,32 +2014,35 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
         pageFlag = 0;
       } else {
         pageFlag = 1;
+        // dummy read
+        readBus(bus, (highByte << 8) + lowByte + cpu->y);
       } 
+   
       return readBus(bus, (highByte << 8) + lowByte + cpu->y);
 
     case zeroPage:
       lowByte = readBus(bus, ++cpu->pc);
+
       return readBus(bus, lowByte);
 
     case zeroPageX:
       zeroPageAddr = readBus(bus, ++cpu->pc);
-      //printf("doing zeropagex with %d \n", cpu->pc);
+      // dummy read
+      readBus(bus, zeroPageAddr);
       zeroPageAddr = zeroPageAddr + cpu->x;
       return readBus(bus, zeroPageAddr);
     
     case zeroPageY:
       zeroPageAddr = readBus(bus, ++cpu->pc);
+
+      // dummy read
+      readBus(bus, zeroPageAddr);
       return readBus(bus, zeroPageAddr = zeroPageAddr + cpu->y);
       
     case indirectX:
       lowByte = readBus(bus, (uint8_t)(cpu->x + readBus(bus, ++cpu->pc))); 
-      //printf("Reading low byte %d \n", readBus(bus, (uint8_t)(cpu->x + readBus(bus, cpu->pc))));
-
       highByte = readBus(bus, (uint8_t)(cpu->x + readBus(bus, cpu->pc) + 1)); 
-      //printf("Reading low byte %d \n", lowByte);
-      //printf("Reading high byte %d \n", highByte);
-      //printf("Doing indirect-x \n");
-      // reads zero page
+
       return readBus(bus, (highByte << 8) | lowByte);
       
     case indirectY:
@@ -1985,6 +2055,7 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
         pageFlag = 0;
       } else {
         pageFlag = 1;
+        readBus(bus, ((highByte << 8) | lowByte) + cpu->y);
       }
       return readBus(bus, ((highByte << 8) | lowByte) + cpu->y);
     default:
@@ -2075,24 +2146,10 @@ void checkCFlag(CPU* cpu, uint8_t operand1, uint8_t operand2, uint8_t operationF
   uint8_t bit1;
   uint8_t bit2;
   uint8_t carry = 0;
-
-
-  // TODO: check to see how this function works (?)
-  //
-
   if(operationFlag == ROTATEL || operationFlag == SHIFTL){
-    // operand2 becomes value before the operation was performed
-    // operand1 becomes value after the operation was performed
-    //fputs("shiftl or rotatel \n", stdout);
-    //printf("cpu->pf %d \n", cpu->pf);
-    //if(getBit(operand2, 7) != 0){
-    //  cpu->pf = setBit(cpu->pf, 0);
-    //} else {
-    //  cpu->pf = clearBit(cpu->pf, 0);
-    //}
+
     cpu->pf = (getBit(operand2, 7) != 0 ? setBit(cpu->pf, C) : clearBit(cpu->pf, C));
-    //printf("cpu->pf %d \n", cpu->pf);
-    //printf("cpu->pf %d \n",  getBit(operand2, 7) == 0 ? setBit(cpu->pf, 7) : clearBit(cpu->pf, 7));
+
     return;
   } else if(operationFlag == ROTATER){
     if(getBit(operand2, 0) != 0){
@@ -2100,17 +2157,10 @@ void checkCFlag(CPU* cpu, uint8_t operand1, uint8_t operand2, uint8_t operationF
     } else {
       cpu->pf = clearBit(cpu->pf, C);
     }
-    //cpu->pf = setBit(cpu->pf, getBit(operand2, 0));
+ 
     return;
   } 
 
-  /*else if(operationFlag == ADD){
-    if((operand1 + operand2) <= 255){
-      cpu->pf = clearBit(cpu->pf, C);
-    } else {
-      cpu->pf = setBit(cpu->pf, C);
-    }
-  }*/
      
 
   if(operationFlag == SHIFTL){

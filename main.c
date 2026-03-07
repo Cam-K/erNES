@@ -45,8 +45,9 @@
 #include <SDL2/SDL_timer.h>
 #include "general.h"
 #include "apu.h"
+#include "gui.h"
 #include <errno.h>
-#include <gtk-3.0/gtk/gtk.h>
+// #include <gtk-3.0/gtk/gtk.h>
 
 
 
@@ -152,6 +153,7 @@ int main(int argc, char* argv[]){
   char screenScaling[MAX_STR];
   screenScaling[0] = '\0';
   uint8_t* fileBuffer;
+
 
 
   FILE* fptr;
@@ -284,11 +286,37 @@ int main(int argc, char* argv[]){
 
   }
 
-  // default to nes mode when no flags are specified, and open file diaglog box
+
+  /*
+  // starts GTK version
   if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0){
-     
+    GtkWidget *dialog;
+    GtkWidget *window;
+    gtk_init(&argc, &argv);
+    dialog = gtk_file_chooser_dialog_new("Open ROM", NULL, GTK_FILE_CHOOSER_ACTION_OPEN, "_Cancel", GTK_RESPONSE_CANCEL, "_Open", GTK_RESPONSE_ACCEPT, NULL);
+
+    GtkFileFilter *filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(filter, "INES File");
+    gtk_file_filter_add_pattern(filter, "*.nes");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
+        
+        strcpy(file, gtk_file_chooser_get_filename(chooser));
+
+    }
+
+    gtk_widget_destroy(dialog);
+
+    while (g_main_context_iteration(NULL, FALSE));
+
+    startNes(file, atoi(screenScaling));
+    
 
   }
+  */
 
 }
 
@@ -447,15 +475,20 @@ void startNes(char* romPath, int screenScaling){
     screenScaling = 1;
   }
 
-  romPtr = fopen(romPath, "rb");
+  
+  if(romPath != NULL){
+    romPtr = fopen(romPath, "rb");
 
 
 
-  if(romPtr == NULL){
-    printf("File not found \n");
-    exit(1);
-  }
+    
+    if(romPtr == NULL){
+      printf("File not found \n");
+      exit(1);
+    }
+  } 
 
+  
   // parses header and checks to see if it is an .ines file
   // bytes 0-3 of ines header
   for(int i = 0; i < 4; ++i){
@@ -593,7 +626,7 @@ void startNes(char* romPath, int screenScaling){
       } else {
         bus.ppu->flagChrRam = 0;
       }
-
+      bus.ppu->frameRendering.screenScaling = screenScaling;
       bus.ppu->mirroring = mirroring;
  
       nesMainLoop(&bus);
@@ -687,7 +720,7 @@ void startNes(char* romPath, int screenScaling){
       resetPpu(bus.ppu, 1);
       resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
-
+      bus.ppu->frameRendering.screenScaling = screenScaling;
 
 
       bus.ppu->mirroring = mirroring;
@@ -736,6 +769,7 @@ void startNes(char* romPath, int screenScaling){
       resetPpu(bus.ppu, 1);
       resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
+      bus.ppu->frameRendering.screenScaling = screenScaling;
 
 
 
@@ -780,7 +814,7 @@ void startNes(char* romPath, int screenScaling){
       bus.ppu->mapper = bus.mapper;
 
 
-  
+      bus.ppu->frameRendering.screenScaling = screenScaling;
       bus.ppu->mirroring = mirroring;
 
       // once machine has been setup to the mapper's needs, enter main loop
@@ -823,7 +857,7 @@ void startNes(char* romPath, int screenScaling){
       resetApu(bus.apu);
       bus.ppu->mapper = bus.mapper;
 
-  
+      bus.ppu->frameRendering.screenScaling = screenScaling;
       bus.ppu->mirroring = mirroring;
       nesMainLoop(&bus);
 
@@ -872,7 +906,7 @@ void nesMainLoop(Bus* bus){
       int currCycles;
 
 
-      bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
+      bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * bus->ppu->frameRendering.screenScaling, WINDOW_HEIGHT * bus->ppu->frameRendering.screenScaling, SDL_WINDOW_RESIZABLE);
       
 
       bus->ppu->renderer = SDL_CreateRenderer(bus->ppu->win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -1339,7 +1373,9 @@ void freeAndExit(Bus* bus){
   
 
   printf("Freeing memory and exiting... \n");
-
+  SDL_DestroyTexture(bus->ppu->texture);
+  SDL_DestroyRenderer(bus->ppu->renderer);
+  SDL_DestroyWindow(bus->ppu->win);
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
 
     free(bus->ppu->frameBuffer[i]);
@@ -1364,7 +1400,7 @@ void freeAndExit(Bus* bus){
     free(bus->memArr[i].contents);
   }
   free(bus->memArr);
-  
+
   exit(0);
 
 

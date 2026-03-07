@@ -331,6 +331,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
     bus->apu->control = val;
   } else if(addr == 0x4016){
 
+    
     if(bus->controller1.strobed == 0 && (getBit(val, 0) == 1)){
       bus->controller1.strobed = 1;
     } else if(bus->controller1.strobed == 1 && (getBit(val, 0) == 0)){

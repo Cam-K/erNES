@@ -1,11 +1,11 @@
 CC = gcc
-CFLAGS = `sdl2-config --cflags` -I. -g -O1 `pkg-config --cflags gtk+-3.0`
-LDFLAGS = `sdl2-config --libs` -L. -lcjson -lm `pkg-config --libs gtk+-3.0`
+CFLAGS = `sdl2-config --cflags` -I. -g -O1 #`pkg-config --cflags gtk+-3.0`
+LDFLAGS = `sdl2-config --libs` -lcjson -lm #`pkg-config --libs gtk+-3.0`
 TARGET = ernes
 BUILDDIR = ./build
 
 
-all: prebuild $(BUILDDIR)/general.o $(BUILDDIR)/memory.o $(BUILDDIR)/cpu.o $(BUILDDIR)/ppu.o $(BUILDDIR)/main.o $(BUILDDIR)/apu.o
+all: prebuild $(BUILDDIR)/general.o $(BUILDDIR)/memory.o $(BUILDDIR)/cpu.o $(BUILDDIR)/ppu.o $(BUILDDIR)/main.o $(BUILDDIR)/apu.o 
 	$(CC) $(BUILDDIR)/general.o $(BUILDDIR)/cpu.o $(BUILDDIR)/memory.o $(BUILDDIR)/ppu.o $(BUILDDIR)/main.o $(BUILDDIR)/apu.o -o $(BUILDDIR)/$(TARGET) $(LDFLAGS)
 
 $(BUILDDIR)/cpu.o: cpu.c 
@@ -25,6 +25,7 @@ $(BUILDDIR)/general.o: general.c
 
 $(BUILDDIR)/apu.o: apu.c
 	$(CC) -o $(BUILDDIR)/apu.o $(CFLAGS) -c apu.c
+
 
 clean:
 	-rm -r ./build

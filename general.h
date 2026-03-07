@@ -29,6 +29,7 @@
 // otherwise 0 for cpu only
 #define NESEMU 1
 
+
 // used to suppress debug output
 #define SUPPRESSOUTPUT 1
 #define WINDOW_WIDTH 256

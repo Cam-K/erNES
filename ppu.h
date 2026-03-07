@@ -85,14 +85,14 @@ typedef struct _OamIndices{
 
 } OAMIndices;
 
+
+// struct used when its time to draw a frame to SDL
 struct FrameRendering {
   uint64_t freq;
   uint64_t frame_start;
   uint64_t frame_end;
   double elasped_ms;
-
-  
-  
+  int screenScaling;
 
 
 };
@@ -258,6 +258,8 @@ typedef struct _PPU {
   SDL_Window* win;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
+
+
 
 
   struct FrameRendering frameRendering;
