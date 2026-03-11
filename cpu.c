@@ -147,14 +147,18 @@ int irq(CPU* cpu, Bus* bus){
 
 }
 
+// fetches opcode of the current program counter
+void fetchOpcode(Bus* bus){
+  bus->cpu->opcode = readBus(bus, bus->cpu->pc);
+}
 
 // returns how many cycles have been executed
-int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
+int decodeAndExecute(CPU* cpu, Bus* bus){
   int cyclesCompleted;
   //printf("\t Executing oppcode: %x at %x \n", oppCode, cpu->pc);
   
   if(cpu->haltFlag == 0){
-  switch(oppCode){
+  switch(bus->cpu->opcode){
     case 0x00:
       cyclesCompleted = brki(cpu, bus);
       break;
@@ -599,7 +603,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
     case 0xf8:
       // this function sets the Decimal flag, but has no function since
       // decimal mode doesn't exist on the nes
-      cyclesCompleted = sed(cpu);
+      cyclesCompleted = sed(bus);
       break;
     case 0xf9:
       cyclesCompleted = sbc(cpu, bus, absoluteY);
@@ -611,7 +615,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
       cyclesCompleted = inc(cpu, bus, absoluteX);
       break;
     default:
-      printf("illegal instruction: %d - 0x%x at %x \n", oppCode, oppCode, cpu->pc);
+      printf("illegal instruction: %d - 0x%x at %x \n", bus->cpu->opcode, bus->cpu->opcode, cpu->pc);
       printf("defaulting to NOP \n");
       cyclesCompleted = nop(cpu);
       
@@ -621,7 +625,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus, uint8_t oppCode){
   if(cyclesCompleted == -1){
     printf("Error detected, halting excution \n");
     printf("Please restart \n");
-    printf("oppcode: %x \n", oppCode);
+    printf("oppcode: %x \n", bus->cpu->opcode);
     halt(cpu);
     return 114;
   }
@@ -1650,8 +1654,9 @@ int rti(CPU* cpu, Bus* bus){
 
 
 
-  // dummy cpu read
+  // dummy cpu reads
   readBus(bus, cpu->pc);
+  readBus(bus, 0x0100 + cpu->sp);
 
 
   cpu->pf = popStack(cpu, bus);
@@ -1674,8 +1679,9 @@ int rti(CPU* cpu, Bus* bus){
 
 int rts(CPU* cpu, Bus* bus){
 
-  // dummy cpu read
+  // dummy cpu reads
   readBus(bus, cpu->pc);
+  readBus(bus, 0x0100 + cpu->sp);
 
 
   cpu->pc = (uint16_t) popStack(cpu, bus);
@@ -1686,18 +1692,21 @@ int rts(CPU* cpu, Bus* bus){
 
 int sec(CPU* cpu, Bus* bus){
   cpu->pf = setBit(cpu->pf, C);
+  readBus(bus, cpu->pc);
   cpu->pc++;
   return 2;
 }
 
-int sed(CPU* cpu){
-  cpu->pf = setBit(cpu->pf, D);
-  cpu->pc++;
+int sed(Bus* bus){
+  bus->cpu->pf = setBit(bus->cpu->pf, D);
+  readBus(bus, bus->cpu->pc);
+  bus->cpu->pc++;
   return 2;
 
 }
 int sei(CPU* cpu, Bus* bus){
   cpu->pf = setBit(cpu->pf, I);
+  readBus(bus, cpu->pc);
   cpu->pc++;
   return 2;
 }
@@ -1714,6 +1723,7 @@ int sbc(CPU* cpu, Bus* bus, AddrMode mode){
   cpu->a += value;
   cpu->a += getBit(cpu->pf, C);
   temp = value + prevA + getBit(cpu->pf, C);
+  readBus(bus, cpu->pc);
   
   //printf("sbc: value - %d ; prevA - %d \n", value, prevA);
 

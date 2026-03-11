@@ -286,9 +286,13 @@ int main(int argc, char* argv[]){
   }
 
 
-  /*
+  
   // starts GTK version
   if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0){
+
+
+    startNes(argv[1], atoi(screenScaling));
+    /*
     GtkWidget *dialog;
     GtkWidget *window;
     gtk_init(&argc, &argv);
@@ -313,9 +317,9 @@ int main(int argc, char* argv[]){
 
     startNes(file, atoi(screenScaling));
     
-
+*/
   }
-  */
+  
 
 }
 
@@ -355,15 +359,15 @@ void interpreter(Bus* bus){
   long inputNum;
   printf("***** type 'h' to print help ******\n");
   while(1){
-    oppCode = readBus(bus, bus->cpu->pc); 
-    printf("Loaded Instruction: %x \n", oppCode);
+    fetchOpcode(bus);
+    printf("Loaded Instruction: %x \n", bus->cpu->opcode);
     printf("Program Counter: %x \n", bus->cpu->pc);
     printf(">");
     (void)!fgets(input, MAX_STR, stdin);
 
     if(input[0] == 's'){
       // steps through the cpu program
-      decodeAndExecute(bus->cpu, bus, oppCode); 
+      decodeAndExecute(bus->cpu, bus); 
       bus->cpu->pc++;
     } else if(input[0] == 'p'){
       if(input[1] == 'c'){
@@ -900,6 +904,7 @@ void nesMainLoop(Bus* bus){
       int processLightGunInput = 0;
       const double target_fps = 60.0;
       const double target_frame_time = 1000.0 / target_fps;
+      const float aspectRatio = (float) WINDOW_WIDTH / WINDOW_HEIGHT;
       int mouseX;
       int mouseY;
       int currCycles;
@@ -910,7 +915,8 @@ void nesMainLoop(Bus* bus){
 
       bus->ppu->renderer = SDL_CreateRenderer(bus->ppu->win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
       bus->ppu->texture = SDL_CreateTexture(bus->ppu->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
-
+      SDL_RenderSetLogicalSize(bus->ppu->renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+      SDL_SetWindowMinimumSize(bus->ppu->win, WINDOW_WIDTH * bus->ppu->frameRendering.screenScaling, WINDOW_HEIGHT * bus->ppu->frameRendering.screenScaling);
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
       }
@@ -920,11 +926,10 @@ void nesMainLoop(Bus* bus){
 
       // enter main loop
       while(1){
+        
           checkForInterrupts(bus);
-          oppCode = readBus(bus, bus->cpu->pc);
-          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus, oppCode);
-         
-          //printf("cycles total: %d \n", bus->cpu->cycles);
+          fetchOpcode(bus);
+          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus);
             
             
         if(bus->ppu->scanLine == 261 && bus->ppu->dotx <= 30){
@@ -966,7 +971,7 @@ void nesMainLoop(Bus* bus){
                     break;
                   case SDLK_r:
                       reset(bus->cpu, bus);
-                      resetPpu(bus->ppu, 1);
+                      resetPpu(bus->ppu, 0);
                       resetApu(bus->apu);
                     break;
 
@@ -1296,10 +1301,11 @@ int jsonTester(char* file, Bus* bus, processorState* state){
 
 
     // start cpu and run test
-    oppCode = readBus(bus, bus->cpu->pc); 
+
+    fetchOpcode(bus);
     //if(SUPPRESSOUTPUT == 0)
     //printf("Executing Oppcode 0x%x at %d\n", oppCode, bus->cpu->pc);
-    decodeAndExecute(bus->cpu, bus, oppCode);
+    decodeAndExecute(bus->cpu, bus);
 
     //fputs("\n", stdout);
     populateProcStructWithJson(final, &finalStruct, oppCode);

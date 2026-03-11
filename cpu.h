@@ -48,6 +48,7 @@ typedef struct _CPU {
   uint8_t x; 
   uint8_t y; 
 
+
   uint8_t sp; 
   uint16_t pc; 
   uint16_t addrBus;
@@ -57,6 +58,11 @@ typedef struct _CPU {
   // processor flags
   uint8_t pf; 
 
+  // internal storage
+  uint8_t opcode;
+  uint8_t addressL;
+  uint8_t addressH;
+  uint8_t operand;
 
   // used for the calculation of the carry flag
   uint8_t prevpf;
@@ -96,7 +102,8 @@ void triggerNmi(CPU*);
 
 void checkForInterrupts(Bus*);
 
-int decodeAndExecute(CPU*, Bus*, uint8_t);
+int decodeAndExecute(CPU*, Bus*);
+void fetchOpcode(Bus*);
 
 
 int adc(CPU*, Bus*, AddrMode);
@@ -153,7 +160,7 @@ int rts(CPU*, Bus*);
 
 int sec(CPU*, Bus*);
 int sei(CPU*, Bus*);
-int sed(CPU*);
+int sed(Bus*);
 
 int sbc(CPU*, Bus*, AddrMode);
 int sta(CPU*, Bus*, AddrMode);
@@ -174,6 +181,7 @@ void checkCFlag(CPU*, uint8_t, uint8_t, uint8_t);
 
 uint8_t addressModeDecode(CPU*, Bus*, AddrMode);
 void addressModeDecodeWrite(uint8_t, CPU*, Bus*, AddrMode);
+
 
 void pushStack(CPU*, Bus*, uint8_t);
 uint8_t popStack(CPU*, Bus*);

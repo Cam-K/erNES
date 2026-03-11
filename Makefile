@@ -39,7 +39,7 @@ windows: CC=x86_64-w64-mingw32-gcc-posix
 windows: CFLAGS = `sdl2-config --cflags` -I. -g -O1 
 windows: LDFLAGS = `sdl2-config --libs` -L. -lcjson -lm 
 windows: TARGET=ernes.exe 
-windows: clean all
+windows: all
 	
 	
 

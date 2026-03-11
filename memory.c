@@ -269,10 +269,11 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->apu->pulse1[1] = val;
         break;
       case 0x4002:
-        bus->apu->pulse1[2] = val;
+        bus->apu->pulse1Timer.timer = (bus->apu->pulse1Timer.timer & 0x700) | val;
         break;
       case 0x4003:
-        bus->apu->pulse1[3] = val;
+        bus->apu->pulse1LengthCounter = bus->apu->lengthCounterTable[(val & 0xf8) >> 3]; 
+        bus->apu->pulse1Timer.timer = (bus->apu->pulse1Timer.timer & 0xff) | (((uint32_t)(val & 0b111)) << 8);
         break;
       case 0x4004:
         bus->apu->pulse2[0] = val;
@@ -281,10 +282,11 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->apu->pulse2[1] = val;
         break;
       case 0x4006:
-        bus->apu->pulse2[2] = val;
+        bus->apu->pulse2Timer.timer = (bus->apu->pulse2Timer.timer & 0x700) | val;
         break;
       case 0x4007:
-        bus->apu->pulse2[3] = val;
+        bus->apu->pulse2LengthCounter = bus->apu->lengthCounterTable[(val & 0xf8) >> 3]; 
+        bus->apu->pulse2Timer.timer = (bus->apu->pulse2Timer.timer & 0xff) | (((uint32_t)(val & 0b111)) << 8);
         break;
       case 0x4008:
         bus->apu->triangle[0] = val;
@@ -296,7 +298,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->apu->triangle[2] = val;
         break;
       case 0x400b:
-        bus->apu->triangle[3] = val;
+        bus->apu->triangleLengthCounter = bus->apu->lengthCounterTable[(val & 0xf8) >> 3]; 
         break;
       case 0x400c:
         bus->apu->noise[0] = val;
@@ -308,7 +310,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
         bus->apu->noise[2] = val;
         break;
       case 0x400f:
-        bus->apu->noise[3] = val;
+        bus->apu->noiseLengthCounter = bus->apu->lengthCounterTable[(val & 0xf8) >> 3]; 
         break;
       case 0x4010:
         bus->apu->dmc[0] = val;
@@ -435,6 +437,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
             bus->ppu->mirroring = 2; 
 
           } else {
+
             bus->ppu->mirroring = 3;
 
           }

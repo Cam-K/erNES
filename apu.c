@@ -23,6 +23,9 @@
 
 #include "apu.h"
 
+void initApu(APU* apu){
+  populateLengthCounterTable(apu);
+}
 
 void resetApu(APU* apu){
 
@@ -41,4 +44,41 @@ void resetApu(APU* apu){
 
 }
 
+void populateLengthCounterTable(APU* apu){
+  apu->lengthCounterTable[0] = 10;    // 00
+  apu->lengthCounterTable[1] = 254;   // 01
+  apu->lengthCounterTable[2] = 20;    // 02
+  apu->lengthCounterTable[3] = 2;     // 03
+  apu->lengthCounterTable[4] = 40;    // 04
+  apu->lengthCounterTable[5] = 4;     // 05
+  apu->lengthCounterTable[6] = 80;    // 06
+  apu->lengthCounterTable[7] = 6;     // 07
+  apu->lengthCounterTable[8] = 160;   // 08
+  apu->lengthCounterTable[9] = 8;     // 09
+  apu->lengthCounterTable[10] = 60;   // 0A
+  apu->lengthCounterTable[11] = 10;   // 0B
+  apu->lengthCounterTable[12] = 14;   // 0C
+  apu->lengthCounterTable[13] = 12;   // 0D
+  apu->lengthCounterTable[14] = 26;   // 0E
+  apu->lengthCounterTable[15] = 14;   // 0F
+  apu->lengthCounterTable[16] = 12;   // 10
+  apu->lengthCounterTable[17] = 16;   // 11
+  apu->lengthCounterTable[18] = 24;   // 12
+  apu->lengthCounterTable[19] = 18;   // 13
+  apu->lengthCounterTable[20] = 48;   // 14
+  apu->lengthCounterTable[21] = 20;   // 15
+  apu->lengthCounterTable[22] = 96;   // 16
+  apu->lengthCounterTable[23] = 22;   // 17
+  apu->lengthCounterTable[24] = 192;  // 18
+  apu->lengthCounterTable[25] = 24;   // 19
+  apu->lengthCounterTable[26] = 72;   // 1A
+  apu->lengthCounterTable[27] = 26;   // 1B
+  apu->lengthCounterTable[28] = 16;   // 1C
+  apu->lengthCounterTable[29] = 28;   // 1D
+  apu->lengthCounterTable[30] = 32;   // 1E
+  apu->lengthCounterTable[31] = 30;   // 1F
+ 
+
+
+}
 

@@ -26,22 +26,33 @@
 #include <SDL2/SDL_audio.h>
 #include <stdint.h>
 
+typedef struct _CTimer{
+  unsigned int timer : 11;
+} ChannelTimer;
+
 typedef struct _APU {
   
 
   // pulse 1 channel registers ($4000-$4003)
   uint8_t pulse1[4];
+  uint8_t pulse1LengthCounter;
+  ChannelTimer pulse1Timer;
 
     // pulse 2 channel registers ($4004-$4007)
   uint8_t pulse2[4];
+  uint8_t pulse2LengthCounter;
+  ChannelTimer pulse2Timer;
 
 
   // triangle channel registers ($4008-$400B)
   uint8_t triangle[4];
+  uint8_t triangleLengthCounter;
+  ChannelTimer triangleTimer;
 
 
   // noise channel registers ($4008-$400B)
   uint8_t noise[4];
+  uint8_t noiseLengthCounter;
 
 
   // dmc channel registers ($4010-$4013)
@@ -50,6 +61,8 @@ typedef struct _APU {
   uint8_t control;
   uint8_t status;
   uint8_t frameCounter;
+
+  uint8_t lengthCounterTable[32];
   
 
   
@@ -58,3 +71,4 @@ typedef struct _APU {
 } APU;
 
 void resetApu(APU*);
+void populateLengthCounterTable(APU*);
