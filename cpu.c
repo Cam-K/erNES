@@ -48,6 +48,8 @@ void reset(CPU* cpu, Bus* bus){
     
     cpu->cycles = 0;
     cpu->haltFlag = 0;
+    cpu->addressH = 0;
+    cpu->addressL = 0;
 
 }
 
@@ -1770,31 +1772,50 @@ int sbc(CPU* cpu, Bus* bus, AddrMode mode){
 
 
 
-// STA - store accumulator in memory
+
 int sta(CPU* cpu, Bus* bus, AddrMode mode){
+  uint8_t pointer;
+  uint8_t operand;
+  uint8_t beforeValue;
   switch(mode){
     case absolute:
     case absoluteY:
     case absoluteX:
-      cpu->pc++;
-      cpu->pc++;
+      bus->cpu->addressL = readBus(bus, ++cpu->pc);
+      bus->cpu->addressH = readBus(bus, ++cpu->pc);
       break;
     case zeroPage:
-    case indirectX:
-    case indirectY:
-    case zeroPageX:
-      cpu->pc++;
+      bus->cpu->addressL = readBus(bus, ++cpu->pc);
       break;
+    case indirectX:
+      operand = readBus(bus, ++cpu->pc);
+      pointer = operand + cpu->x;
+      bus->cpu->addressL = readBus(bus, pointer);
+      bus->cpu->addressH = readBus(bus, pointer += 1);
+      break;
+    case indirectY:
+      pointer = readBus(bus, ++cpu->pc);
+      bus->cpu->addressL = readBus(bus, pointer);
+      bus->cpu->addressH = readBus(bus, pointer += 1);
+      beforeValue = bus->cpu->addressL;
+      bus->cpu->addressL += cpu->y;
+
+      // carry out value
+      if(beforeValue > bus->cpu->addressL){
+        bus->cpu->addressH++;
+      }
+
+      break;
+    case zeroPageX:
+      bus->cpu->addressL = readBus(bus, ++cpu->pc) + cpu->x;
+      break;
+
     default:
-      cpu->pc++;
+      bus->cpu->addressL = readBus(bus, ++cpu->pc);
       break;
   }
-  // if(mode == absolute || mode == absoluteY){
-  //   cpu->pc++;
-  //   cpu->pc++;
-  // } else if(mode == zeroPage || mode == indirectX || mode == indirectY || mode == zeroPageX){
-  //   cpu->pc++;
-  // }
+
+  
   addressModeDecodeWrite(cpu->a, cpu, bus, mode);
   cpu->pc++;
   switch(mode){
@@ -1822,10 +1843,12 @@ int stx(CPU* cpu, Bus* bus, AddrMode mode){
 
 
   if(mode == absolute){
-    cpu->pc++;
-    cpu->pc++;
-  } else if ((mode == zeroPage) | (mode == zeroPageY)){
-    cpu->pc++;
+    bus->cpu->addressL = readBus(bus, ++cpu->pc);
+    bus->cpu->addressH = readBus(bus, ++cpu->pc);
+  } else if (mode == zeroPage){
+    bus->cpu->addressL = readBus(bus, ++cpu->pc);
+  } else if (mode == zeroPageY){
+    bus->cpu->addressL = readBus(bus, ++cpu->pc) + cpu->y;
   }
 
   addressModeDecodeWrite(cpu->x, cpu, bus, mode);
@@ -1846,10 +1869,13 @@ int stx(CPU* cpu, Bus* bus, AddrMode mode){
 
 int sty(CPU* cpu, Bus* bus, AddrMode mode){
   if(mode == absolute){
-    cpu->pc++;
-    cpu->pc++;
-  } else if (mode == zeroPage || mode == zeroPageX){
-    cpu->pc++;
+    bus->cpu->addressL = readBus(bus, ++cpu->pc);
+    bus->cpu->addressH = readBus(bus, ++cpu->pc);
+  } else if (mode == zeroPage){
+    bus->cpu->addressL = readBus(bus, ++cpu->pc);
+  } else if(mode == zeroPageX){
+    bus->cpu->addressL = readBus(bus, ++cpu->pc) + cpu->x;
+
   }
   addressModeDecodeWrite(cpu->y, cpu, bus, mode);
   cpu->pc++;
@@ -1925,19 +1951,13 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 
   switch(mode){
     case absolute:
-      lowByte = readBus(bus, cpu->pc - 1);
-      highByte = readBus(bus, cpu->pc);
-      writeBus(bus, (highByte << 8) + lowByte, value);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL, value);
       return;
     case absoluteX:
-      lowByte = readBus(bus, cpu->pc - 1);
-      highByte = readBus(bus, cpu->pc);
-      writeBus(bus, (highByte << 8) + lowByte + cpu->x, value);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x, value);
       return;
     case absoluteY:
-      lowByte = readBus(bus, cpu->pc - 1);
-      highByte = readBus(bus, cpu->pc);
-      writeBus(bus, (highByte << 8) + lowByte + cpu->y, value);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y, value);
       return;
     case accumulator:
 
@@ -1947,33 +1967,19 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
       cpu->a = value;
       return;
     case zeroPage:
-      lowByte = readBus(bus, cpu->pc);
-      writeBus(bus, lowByte & 0xff, value);
+      writeBus(bus, bus->cpu->addressL, value);
       return;
     case zeroPageX:
-      // bitwise AND with 0xff so as to only get the lower 8 bits
-      zeroPageAddr = readBus(bus, cpu->pc);
-      zeroPageAddr = zeroPageAddr + cpu->x;
-      writeBus(bus, zeroPageAddr, value);
+      writeBus(bus, bus->cpu->addressL, value);
       return;
     case zeroPageY:
-      zeroPageAddr = readBus(bus, cpu->pc);
-      writeBus(bus, zeroPageAddr = zeroPageAddr + cpu->y, value);
+      writeBus(bus, bus->cpu->addressL, value);
       return;
     case indirectX:
-      // inner readBus function gets the bytes from the second byte of the instruction
-      //
-      // outer readBus function gets the low and high bytes, of which are in the
-      // zero page and who's contents will yield our effective address
-      lowByte = readBus(bus, (readBus(bus, cpu->pc) + cpu->x) & 0xff);
-      highByte = readBus(bus, (readBus(bus, cpu->pc) + cpu->x + 1) & 0xff);
-      writeBus(bus, (highByte << 8) + lowByte, value);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + bus->cpu->addressL, value);
       return;
     case indirectY:
-      zeroPageAddr = readBus(bus, cpu->pc);
-      lowByte = readBus(bus, zeroPageAddr);
-      highByte = readBus(bus, ++zeroPageAddr);
-      writeBus(bus, (highByte << 8) + (lowByte = lowByte + cpu->y), value);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + bus->cpu->addressL, value);
       return;
     default:
       return;
@@ -1989,6 +1995,7 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
   uint16_t lowByte, highByte, byte, addr, currPage, newPage;
   uint8_t zeroPageAddr;
+  uint8_t prevValue;
   switch(mode){
     case immediate:
       return readBus(bus, ++cpu->pc);
@@ -2000,81 +2007,81 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       return readBus(bus, ++cpu->pc);
       
     case absolute:
-      lowByte = readBus(bus, ++cpu->pc);
-      highByte = readBus(bus, ++cpu->pc);
+      bus->cpu->addressL = readBus(bus, ++cpu->pc);
+      bus->cpu->addressH = readBus(bus, ++cpu->pc);
       
 
-      return readBus(bus, (highByte << 8) + lowByte);
+      return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL);
 
     case absoluteX:        
-      lowByte = readBus(bus, ++cpu->pc); 
-      highByte = readBus(bus, ++cpu->pc); 
-      currPage = ((highByte << 8) | lowByte) & 0xff00;
-      newPage = (((highByte << 8) | lowByte) + cpu->x) & 0xff00;
+      bus->cpu->addressL = readBus(bus, ++cpu->pc); 
+      bus->cpu->addressH = readBus(bus, ++cpu->pc); 
+      currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
+      newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->x) & 0xff00;
       if(currPage == newPage){
         pageFlag = 0;
       } else {
         pageFlag = 1;
 
         // dummy read
-        readBus(bus, (highByte << 8) + lowByte + cpu->x);
+        readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
       }
       
-      return readBus(bus, (highByte << 8) + lowByte + cpu->x);
+      return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+
 
     case absoluteY:
-      lowByte = readBus(bus, ++cpu->pc); 
-      highByte = readBus(bus, ++cpu->pc);
-      currPage = ((highByte << 8) | lowByte) & 0xff00;
-      newPage = (((highByte << 8) | lowByte) + cpu->y) & 0xff00;
+      bus->cpu->addressL = readBus(bus, ++cpu->pc); 
+      bus->cpu->addressH = readBus(bus, ++cpu->pc); 
+      currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
+      newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->y) & 0xff00;
       if(currPage == newPage){
         pageFlag = 0;
       } else {
         pageFlag = 1;
         // dummy read
-        readBus(bus, (highByte << 8) + lowByte + cpu->y);
+        readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
       } 
    
-      return readBus(bus, (highByte << 8) + lowByte + cpu->y);
+      return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
+
 
     case zeroPage:
-      lowByte = readBus(bus, ++cpu->pc);
+      bus->cpu->addressL = readBus(bus, ++cpu->pc);
 
-      return readBus(bus, lowByte);
+      return readBus(bus, bus->cpu->addressL);
 
     case zeroPageX:
       zeroPageAddr = readBus(bus, ++cpu->pc);
-      // dummy read
-      readBus(bus, zeroPageAddr);
-      zeroPageAddr = zeroPageAddr + cpu->x;
-      return readBus(bus, zeroPageAddr);
+      bus->cpu->addressL = zeroPageAddr + cpu->x;
+      return readBus(bus, bus->cpu->addressL);
     
     case zeroPageY:
       zeroPageAddr = readBus(bus, ++cpu->pc);
-
-      // dummy read
-      readBus(bus, zeroPageAddr);
-      return readBus(bus, zeroPageAddr = zeroPageAddr + cpu->y);
+      bus->cpu->addressL = zeroPageAddr + cpu->y;
+      return readBus(bus, bus->cpu->addressL);
       
     case indirectX:
-      lowByte = readBus(bus, (uint8_t)(cpu->x + readBus(bus, ++cpu->pc))); 
-      highByte = readBus(bus, (uint8_t)(cpu->x + readBus(bus, cpu->pc) + 1)); 
+      bus->cpu->addressL = readBus(bus, (uint8_t)(cpu->x + readBus(bus, ++cpu->pc))); 
+      bus->cpu->addressH = readBus(bus, (uint8_t)(cpu->x + readBus(bus, cpu->pc) + 1)); 
 
-      return readBus(bus, (highByte << 8) | lowByte);
+      return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) | bus->cpu->addressL);
       
     case indirectY:
       zeroPageAddr = readBus(bus, ++cpu->pc); 
-      lowByte = readBus(bus, zeroPageAddr);
-      highByte = readBus(bus, ++zeroPageAddr);
-      currPage = ((highByte << 8) | lowByte) & 0xff00;
-      newPage = (((highByte << 8) | lowByte) + cpu->y) & 0xff00;
+      bus->cpu->addressL = readBus(bus, zeroPageAddr);
+      bus->cpu->addressH = readBus(bus, zeroPageAddr += 1);
+      currPage = ((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) & 0xff00;
+      newPage = (((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) + cpu->y) & 0xff00;
       if(currPage == newPage){
         pageFlag = 0;
       } else {
         pageFlag = 1;
-        readBus(bus, ((highByte << 8) | lowByte) + cpu->y);
+        
       }
-      return readBus(bus, ((highByte << 8) | lowByte) + cpu->y);
+
+      
+      return readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) + (bus->cpu->addressL + cpu->y)));
     default:
       halt(cpu);
       return 0;

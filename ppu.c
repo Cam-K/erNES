@@ -49,7 +49,6 @@ void initPpu(PPU* ppu, int banks){
     ppu->ppubus->memArr = calloc(1, sizeof(Mem));
   }
   ppu->ppubus->numOfBlocks = banks;
-  printf("initializing PPU \n");
   ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_HEIGHT);
   
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
@@ -76,7 +75,7 @@ void initPpu(PPU* ppu, int banks){
 }
 
 
-// powerFlag is used to denote whether the reset is used
+// powerFlag is used to denote whether the power is used
 // for a power up as opposed to just a reset
 void resetPpu(PPU* ppu, int powerFlag){
   ppu->ctrl = 0;

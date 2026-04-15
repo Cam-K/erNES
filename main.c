@@ -46,6 +46,7 @@
 #include "general.h"
 #include "apu.h"
 #include <errno.h>
+#include <dirent.h>
 // #include <gtk-3.0/gtk/gtk.h>
 
 
@@ -55,7 +56,6 @@
 // original resolution of Nintendo
 
 // this includes the hblanking period as well
-#define CPU_CYCLES_PER_SCANLINE 113
 
 void parseTwoHexNums(char*, uint16_t*, uint16_t*);
 
@@ -86,6 +86,7 @@ typedef struct procState {
 } processorState;
 
 int jsonTester(char*, Bus*, processorState*);
+void jsonTesterBatch(char*);
 
 // struct to encapsulate the results from a json test.
 // needed for multithreaded tests
@@ -145,6 +146,7 @@ int main(int argc, char* argv[]){
   int nFlag = 0;
   int iFlag = 0;
   int sFlag = 0;
+  int dFlag = 0;
   int opt;
   int jFlag = 0;
   char fileDirectory[MAX_STR];
@@ -161,7 +163,7 @@ int main(int argc, char* argv[]){
   
   // parsing command line arguments
   if(argc > 1){
-    while((opt = getopt(argc, argv, "fjhnis")) != -1)
+    while((opt = getopt(argc, argv, "fjhnisd")) != -1)
     {
       switch(opt){
         case 'f':
@@ -194,6 +196,12 @@ int main(int argc, char* argv[]){
           sFlag = 1;
           if(argv[optind] != NULL){
             strcpy(screenScaling, argv[optind]);
+          }
+          break;
+        case 'd':
+          dFlag = 1;
+          if(argv[optind] != NULL){
+            strcpy(fileDirectory, argv[optind]);
           }
           break;
           
@@ -285,39 +293,19 @@ int main(int argc, char* argv[]){
 
   }
 
+  if(dFlag == 1){
 
-  
-  // starts GTK version
-  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0){
+    // starts json tester in batch mode (i.e. completes all the tom harte tests that reside in a directory
+    jsonTesterBatch(fileDirectory);
+  }
+
+
+
+  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0){
 
 
     startNes(argv[1], atoi(screenScaling));
-    /*
-    GtkWidget *dialog;
-    GtkWidget *window;
-    gtk_init(&argc, &argv);
-    dialog = gtk_file_chooser_dialog_new("Open ROM", NULL, GTK_FILE_CHOOSER_ACTION_OPEN, "_Cancel", GTK_RESPONSE_CANCEL, "_Open", GTK_RESPONSE_ACCEPT, NULL);
-
-    GtkFileFilter *filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "INES File");
-    gtk_file_filter_add_pattern(filter, "*.nes");
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
-    {
-        GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
-        
-        strcpy(file, gtk_file_chooser_get_filename(chooser));
-
-    }
-
-    gtk_widget_destroy(dialog);
-
-    while (g_main_context_iteration(NULL, FALSE));
-
-    startNes(file, atoi(screenScaling));
-    
-*/
+ 
   }
   
 
@@ -1223,12 +1211,46 @@ int populateMemWithJson(Bus* bus, cJSON* json){
 
 }
 
-// void jsonTester()
-// takes the file directory where the tom harte tests reside and will run them
+
+void jsonTesterBatch(char* fileDirectory){
+    Bus bus;
+    char currFile[MAX_STR];
+    DIR *dir;
+    struct dirent *entry;
+
+    printf("Entering Json Batch Mode \n");
+
+
+    initBus(&bus, 1);
+    initMemStruct(&(bus.memArr[0]), 0xffff, Ram, TRUE);
+    mapMemory(&bus, 0, 0x0000);
+
+
+    dir = opendir(fileDirectory);
+    while((entry = readdir(dir)) != NULL){
+      if(strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0){
+        strcpy(currFile, fileDirectory);
+        strcat(currFile, entry->d_name);
+        if(jsonTester(currFile, &bus, NULL) == 1){
+          printf("Passed tests for %s \n", entry->d_name); 
+        } else {
+          printf("Failed tests for %s \n", entry->d_name);
+        }
+
+      }
+    }
+
+
+}
+
+// int jsonTester()
+// takes the file where a tom harte test resides and will run it
 // ranges from 00.json to ff.json
 // inputs:
 //   char* - complete path of json file, relative to executable
 //   Bus* -  bus to be tested
+//   processorState* - an optional pointer as to store to final processor state after the test (can be set to NULL)
+// returns 
 int jsonTester(char* file, Bus* bus, processorState* state){
   FILE *fptr;
 
@@ -1282,14 +1304,10 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     final = cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(jsonData,i), "final");
     initRam = cJSON_GetObjectItemCaseSensitive(initial, "ram");
     finalRam = cJSON_GetObjectItemCaseSensitive(final, "ram");
-    //pc = cJSON_GetObjectItemCaseSensitive(initial, "pc");
-    //cJSON* title = cJSON_GetObjectItemCaseSensitive(glossary, "title");
+
     //if(SUPPRESSOUTPUT == 0)
      // printf("Test Name %s \n", name->valuestring);
   
-    // setup cpu and testing environment
-
-    //printf("memory address of memarr %lx for %s \n", bus->memArr, file);
 
     reset(bus->cpu, bus);
     clearMem(&bus->memArr[0]);
@@ -1307,7 +1325,6 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     //printf("Executing Oppcode 0x%x at %d\n", oppCode, bus->cpu->pc);
     decodeAndExecute(bus->cpu, bus);
 
-    //fputs("\n", stdout);
     populateProcStructWithJson(final, &finalStruct, oppCode);
     //if(SUPPRESSOUTPUT == 0)
     //  printCpuWithJson(bus->cpu, finalStruct, errorCode);
@@ -1328,18 +1345,10 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     }
 
 
-  //  while(input[0] != 'c'){
-  //    fgets(input, MAX_STR, stdin);
-
-  //  }
-  //strcpy(input, "0");
   
   }
 
-   //int val = cJSON_GetArrayItem(cJSON_GetArrayItem(initRam,0),1)->valueint;
-//  char* str = cJSON_Print(cJSON_GetArrayItem(cJSON_GetArrayItem(initRam,0),0));
-  //printf("%s \n", str);
-  //printf("%d \n", val);
+
    
 
 
@@ -1357,13 +1366,14 @@ void printHelp(){
   puts("erNES: NES/6502 emulator \n");
   puts("Emulates a 6502 mcu as well as an NES");
   puts("Usage: ernes [-n][FILE]\n");
-  puts("       ernes [-p] [DIR] \n");
+  puts("       ernes [-d] [DIR] \n");
   puts("       ernes [-i] \n");
   puts("       ernes [-h] \n");
   puts("       ernes [-n] [FILE] -s [SCALING INTEGER] \n");
   puts("\t -j [FILE] \t starts json tester with specfic json file \n");
   puts("\t -i [DIR] \t starts interpreter with 64k allocated to RAM \n");
   puts("\t -n [FILE] \t starts in NES mode with INES rom file \n");
+  puts("\t -d [DIR] \t starts json tester in batch mode with a directory of json tests \n");
     puts("\t -s [RESOLUTION SCALING INTEGER] \t integer amount to scale the resolution by (default: 1) \n");
   puts("\t NOTE: To use -j or -i flags, make sure to set the NESEMU to 0 macro in general.h and recompile, otherwise keep it set to 1 to compile the NES emulator code");
 
