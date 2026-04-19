@@ -27,7 +27,7 @@
 
 // to compile in code meant for the nes emulator, set this to 1
 // otherwise 0 for cpu only (including json tester)
-#define NESEMU 0
+#define NESEMU 1
 
 
 // used to suppress debug output

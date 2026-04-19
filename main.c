@@ -215,7 +215,7 @@ int main(int argc, char* argv[]){
 
   
   // start Tom Harte's tester
-  if(jFlag == 1){
+  if(jFlag == 1 && NESEMU == 0){
     Bus bus;
     initBus(&bus, 1);
     initMemStruct(&(bus.memArr[0]), 0xffff, Ram, TRUE);
@@ -274,13 +274,13 @@ int main(int argc, char* argv[]){
     interpreter(&bus);
   } 
 
-  if(nFlag == 1){
+  if(nFlag == 1 && NESEMU == 1){
     startNes(file, atoi(screenScaling));
   }
   
   // starts interpreter with no file
   // - empty chunk of 64k memory 
-  if(iFlag == 1){
+  if(iFlag == 1 && NESEMU == 0){
     Bus bus;
     printf("Starting interpreter \n");
     initBus(&bus, 1);
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]){
 
   }
 
-  if(dFlag == 1){
+  if(dFlag == 1 && NESEMU == 0){
 
     // starts json tester in batch mode (i.e. completes all the tom harte tests that reside in a directory
     jsonTesterBatch(fileDirectory);
@@ -301,12 +301,15 @@ int main(int argc, char* argv[]){
 
 
 
-  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0){
-
-
-    startNes(argv[1], atoi(screenScaling));
+  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0 && NESEMU == 1){
+    printf("%d \n", argc);
+    if(argc >= 2){
+      startNes(argv[1], atoi(screenScaling));
+    }
  
   }
+
+  printHelp();
   
 
 }
@@ -1375,7 +1378,7 @@ void printHelp(){
   puts("\t -n [FILE] \t starts in NES mode with INES rom file \n");
   puts("\t -d [DIR] \t starts json tester in batch mode with a directory of json tests \n");
     puts("\t -s [RESOLUTION SCALING INTEGER] \t integer amount to scale the resolution by (default: 1) \n");
-  puts("\t NOTE: To use -j or -i flags, make sure to set the NESEMU to 0 macro in general.h and recompile, otherwise keep it set to 1 to compile the NES emulator code");
+  puts("\t NOTE: To use -j, -i, or -d flags, make sure to set the NESEMU macro to 0 in general.h and recompile, otherwise keep it set to 1 to compile the NES emulator code");
 
 
   exit(0);

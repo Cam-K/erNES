@@ -120,9 +120,9 @@ int bvc(CPU*, Bus*);
 int bvs(CPU*, Bus*);
 void halt(CPU*);
 
-int clc(CPU*);
+int clc(Bus*);
 int cld(CPU*);
-int cli(CPU*);
+int cli(Bus*);
 int clv(CPU*);
 int cmp(CPU*, Bus*, AddrMode);
 
@@ -130,7 +130,7 @@ int cpx(CPU*, Bus*, AddrMode);
 int cpy(CPU*, Bus*, AddrMode);
 int dec(CPU*, Bus*, AddrMode);
 int dex(CPU*, Bus*);
-int dey(CPU*);
+int dey(Bus*);
 int eor(CPU*, Bus*, AddrMode);
 int inc(CPU*, Bus*, AddrMode);
 int inx(CPU*);
@@ -144,7 +144,7 @@ int lda(CPU*, Bus*, AddrMode);
 int ldx(CPU*, Bus*, AddrMode);
 int ldy(CPU*, Bus*, AddrMode);
 int lsr(CPU*, Bus*, AddrMode);
-int nop(CPU*);
+int nop(Bus*);
 
 int ora(CPU*, Bus*, AddrMode);
 
@@ -167,12 +167,12 @@ int sta(CPU*, Bus*, AddrMode);
 int stx(CPU*, Bus*, AddrMode);
 int sty(CPU*, Bus*, AddrMode);
 
-int tax(CPU*);
-int tay(CPU*);
-int tsx(CPU*);
-int txa(CPU*);
-int txs(CPU*);
-int tya(CPU*);
+int tax(Bus*);
+int tay(Bus*);
+int tsx(Bus*);
+int txa(Bus*);
+int txs(Bus*);
+int tya(Bus*);
 
 void checkNFlag(CPU*, uint8_t);
 void checkVFlag(CPU*, uint8_t, uint8_t, uint8_t);
