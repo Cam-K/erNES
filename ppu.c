@@ -309,7 +309,7 @@ void copyMmc1(MMC1* src, MMC1* dest){
 
 
 
-// function to parse the approriate sprite shifter, with number
+// function to parse the approriate sprite shifter, with index number
 uint8_t parseSpriteShifter(PPU* ppu, int index){
   uint8_t bitLo;
   uint8_t bitHi;
@@ -472,11 +472,15 @@ void tickPpu(Bus* bus){
     
   // ***** sprite output process ******* 
   if(getBit(bus->ppu->mask, 4) != 0){
-    if(bus->ppu->scanLine >= 1 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+    if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
 
       finalSpritePixel = 0;
       bitsCombined = 0;
       for(int i = 0; i < 8; ++i){
+
+          // we use the bitsCombined variable as a state-machine of sorts.
+          // if bitsCombined == 0, then we know that we haven't found the first non-zero output from a 
+          // sprite-shifter. 
           if(bitsCombined == 0){
             bitsCombined = parseSpriteShifter(bus->ppu, i);
           } else {
@@ -484,16 +488,20 @@ void tickPpu(Bus* bus){
             parseSpriteShifter(bus->ppu, i);
           }
       
-            // sprite zero hit
+          // sprite zero hit
           if(i == 0 && bus->ppu->spriteZeroOnThisScanline == 1){
             if(bitsCombined != 0 && finalBackgroundPixel != 0){
               bus->ppu->status = setBit(bus->ppu->status, 6);
               bus->ppu->spriteZeroOnThisScanline = 0;
+
             }
           }
           
           // if the sprite pixel hasn't been found yet and one was just found
           if(finalSpritePixel == 0 && bitsCombined != 0){
+
+            // finalSpritePixel is a 4-bit value, combining the attribute data with the two bits
+            // that were just found from the sprite shifters. 
             finalSpritePixel = bitsCombined | (bus->ppu->spriteShifters[i].attributeData << 2);
             spritePriority = bus->ppu->spriteShifters[i].bgPriorityFlag;
             // there is no break here because despite finding the first bit that is non-zero, we still need
@@ -502,11 +510,15 @@ void tickPpu(Bus* bus){
       }
       
       for(int i = 0; i < 8; ++i){
+        // decrement all sprite shifter's x-coordinate by one because this is how we keep track
+        // of how far the beam is across the screen in relation to when the sprite shifter should
+        // be outputting something
         if(bus->ppu->spriteShifters[i].xCoordinate > 0){
           bus->ppu->spriteShifters[i].xCoordinate--;
         }
       }
 
+      // no sprite rendering on dotx <= 8
       if(bus->ppu->dotx <= 8 && getBit(bus->ppu->mask, 2) == 0){
         finalSpritePixel = 0;
 
@@ -699,338 +711,365 @@ void tickPpu(Bus* bus){
   
   // ****** Sprite Process ******
   if(getBit(bus->ppu->mask, 4) != 0){
+
     
     if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239)){
-    if(bus->ppu->dotx == 1){
-      bus->ppu->oamIndex.m = 0;
-      bus->ppu->oamIndex.n = 0;
-      bus->ppu->spriteEvaluationStateMachine = 0;
-    }
-
-    //  
-    if(bus->ppu->dotx >= 1 && bus->ppu->dotx <= 64){
-
-      // clear secondary OAM
-      #if TICKPPUDEBUGLOG == 1
-      printf("\t clearing oam \n");
-      #endif
-      bus->ppu->secondaryOam.data[(bus->ppu->dotx - 1) % 32] = 0xff;
-    } else if(bus->ppu->dotx >= 65 && bus->ppu->dotx <= 256){
-
-      // we now do a linear search through the OAM and if it's in range of the y, we copy it into secondary OAM.
-      if(bus->ppu->dotx == 65){
+      if(bus->ppu->dotx == 1){
+        bus->ppu->oamIndex.m = 0;
+        bus->ppu->oamIndex.n = 0;
         bus->ppu->spriteEvaluationStateMachine = 0;
-        bus->ppu->secondaryOam.spriteCounter = 0;
-        bus->ppu->spriteZeroOnNextScanline = 0;
       }
-      
-      if(bus->ppu->spriteEvaluationStateMachine == 0){
-        if(bus->ppu->secondaryOam.spriteCounter <= 7){
-          // copy y coordinate index n into oam into secondary oam
-          bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] = bus->ppu->oam[bus->ppu->oamIndex.n * 4];
-          
 
-        }
 
-        if(getBit(bus->ppu->ctrl, 5) == 0){
-          // if y coordinate is in range of the scanline, copy the rest of the OAM contents into secondaryOAM
-          if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= bus->ppu->scanLine) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 7) >= bus->ppu->scanLine)){
-            for(int i = 1; i < 4; ++i){
-              bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
-            }
-          // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
-            if(bus->ppu->oamIndex.n == 0){
-              bus->ppu->spriteZeroOnNextScanline = 1;
-            }
-            bus->ppu->secondaryOam.spriteCounter++;
-          }
-          bus->ppu->spriteEvaluationStateMachine = 1;
+      if(bus->ppu->dotx >= 1 && bus->ppu->dotx <= 64){
 
-        } else {
-          if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= bus->ppu->scanLine) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 15) >= bus->ppu->scanLine)){
-            for(int i = 1; i < 4; ++i){
-              bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
-            }
-          // printf("copied bytes to %d \n", bus->ppu->secondaryOam.spriteCounter);
-            if(bus->ppu->oamIndex.n == 0){
-              bus->ppu->spriteZeroOnNextScanline = 1;
-            }
-            bus->ppu->secondaryOam.spriteCounter++;
-          }
-          bus->ppu->spriteEvaluationStateMachine = 1;
+        // clear secondary OAM
+        #if TICKPPUDEBUGLOG == 1
+        printf("\t clearing oam \n");
+        #endif
+        bus->ppu->secondaryOam.data[(bus->ppu->dotx - 1) % 32] = 0xff;
+      } else if(bus->ppu->dotx >= 65 && bus->ppu->dotx <= 256){
 
-        }
-
-      } else if(bus->ppu->spriteEvaluationStateMachine == 1){
-      
-        bus->ppu->oamIndex.n++;
-
-        if(bus->ppu->oamIndex.n == 0){
-          bus->ppu->spriteEvaluationStateMachine = 3;
-        } else if(bus->ppu->secondaryOam.spriteCounter < 8){
+        // we now do a linear search through the OAM and if it's in range of the y, we copy it into secondary OAM.
+        if(bus->ppu->dotx == 65){
           bus->ppu->spriteEvaluationStateMachine = 0;
+          bus->ppu->secondaryOam.spriteCounter = 0;
+          bus->ppu->spriteZeroOnNextScanline = 0;
+        }
+        
+        if(bus->ppu->spriteEvaluationStateMachine == 0){
+          if(bus->ppu->secondaryOam.spriteCounter <= 7){
+            // copy y coordinate index n into oam into secondary oam
+            bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] = bus->ppu->oam[bus->ppu->oamIndex.n * 4];
+            
+
+          }
+
+          if(getBit(bus->ppu->ctrl, 5) == 0){
+            // if y coordinate is in range of the scanline, copy the rest of the OAM contents into secondaryOAM
+            if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 7) >= (bus->ppu->scanLine & 0xff))){
+              for(int i = 1; i < 4; ++i){
+                bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
+              }
+              if(bus->ppu->scanLine == 239){
+                printf("%d \n", bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4]);
+
+              }
+
+              if(bus->ppu->oamIndex.n == 0){
+                bus->ppu->spriteZeroOnNextScanline = 1;
+
+              }
+
+              // increment spriteCounter because we now want to reserve the next slot in Secondary OAM
+              bus->ppu->secondaryOam.spriteCounter++;
+            } else {
+              bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] = 0xff;
+            }
+            bus->ppu->spriteEvaluationStateMachine = 1;
+
+          } else {
+            if((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] + 15) >= (bus->ppu->scanLine & 0xff))){
+              for(int i = 1; i < 4; ++i){
+                bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
+              }
+              if(bus->ppu->oamIndex.n == 0){
+                bus->ppu->spriteZeroOnNextScanline = 1;
+
+              }
+              bus->ppu->secondaryOam.spriteCounter++;
+            } else {
+              bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4] = 0xff;
+            }
+            bus->ppu->spriteEvaluationStateMachine = 1;
+
+          }
+
+        } else if(bus->ppu->spriteEvaluationStateMachine == 1){
+        
+          bus->ppu->oamIndex.n++;
+
+          if(bus->ppu->oamIndex.n == 0){
+            bus->ppu->spriteEvaluationStateMachine = 3;
+          } else if(bus->ppu->secondaryOam.spriteCounter < 8){
+            bus->ppu->spriteEvaluationStateMachine = 0;
+          } 
+
+        } else if(bus->ppu->spriteEvaluationStateMachine == 2){
+          if(bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
+            bus->ppu->status = clearBit(bus->ppu->status, 5);
+            // TODO: implement sprite overflow bug
+            
+          }
+
         } 
 
-      } else if(bus->ppu->spriteEvaluationStateMachine == 2){
-        if(bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] >= bus->ppu->scanLine && bus->ppu->oam[((bus->ppu->oamIndex.m * 4) + bus->ppu->oamIndex.n)] + 7 <= bus->ppu->scanLine){
-          bus->ppu->status = clearBit(bus->ppu->status, 5);
-          // TODO: implement sprite overflow bug
-          
+        if(bus->ppu->dotx == 256){
+          bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
+        }
+        
+        
+
+
+      }
+    }
+
+
+    // we now use the secondary OAM to transfer the data into lo and hi bitplanes, used to be stored into the 8 sprite latches
+    if((bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239) || bus->ppu->scanLine == 261){
+      if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 320){
+        /*
+        if(bus->ppu->scanLine == 261){
+          printf("***** \n");
+          for(int i = 0; i < 32; ++i){
+            printf("%d ", bus->ppu->secondaryOam.data[i]);
+            if(i % 4 == 3){
+              printf("\n");
+            }
+          }
+          printf("***** \n");
+
+        }
+        */
+        
+        if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 319){
+          bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
+        }
+        
+        if(bus->ppu->dotx == 257){
+          bus->ppu->spriteLatchCounter = 0;
         }
 
-      } 
+        // on first 4 cycles, read in yCoordinate, tilenumber, xcoordinate, and attributedata to the latch
+        if(bus->ppu->dotx % 8 == 1){
 
-      if(bus->ppu->dotx == 256){
-        bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
-      }
-      
-      
-
-
-    } else if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 320){
-
-      // we now use the secondary OAM to transfer the data into lo and hi bitplanes, used to be stored into the 8 sprite latches
- 
-      if(bus->ppu->dotx >= 257 && bus->ppu->dotx <= 319){
-        bus->ppu->spriteZeroOnThisScanline = bus->ppu->spriteZeroOnNextScanline;
-      }
-      
-      if(bus->ppu->dotx == 257){
-        bus->ppu->spriteLatchCounter = 0;
-      }
-
-      // on first 4 cycles, read in yCoordinate, tilenumber, xcoordinate, and attributedata to the latch
-      if(bus->ppu->dotx % 8 == 1){
-
-        bus->ppu->spriteLatch.yCoordinate = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter];
-      
-
-      } else if(bus->ppu->dotx % 8 == 2){
-
-        bus->ppu->spriteLatch.tileNumber = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 1];
-       
-
-      } else if(bus->ppu->dotx % 8 == 3){
-
-
-        bus->ppu->spriteLatch.attributeData = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 2];
-
-
-
-
-      } else if(bus->ppu->dotx % 8 == 4){
+          bus->ppu->spriteLatch.yCoordinate = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter];
           
-          bus->ppu->spriteLatch.xCoordinate = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 3];
+
+        } else if(bus->ppu->dotx % 8 == 2){
+
+          bus->ppu->spriteLatch.tileNumber = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 1];
         
-        
-        
 
-      } else if(bus->ppu->dotx % 8 == 5){
-        // choose between 8x16 or 8x8 sprite mode
-        if(getBit(bus->ppu->ctrl, 5) == 0){
+        } else if(bus->ppu->dotx % 8 == 3){
 
 
-          if(getBit(bus->ppu->ctrl, 3) != 0){
-            patternTableOffset = 0x1000;
-          } else {
-            patternTableOffset = 0;
-          }
+          bus->ppu->spriteLatch.attributeData = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 2];
 
 
-          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
-            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate));
+
+
+        } else if(bus->ppu->dotx % 8 == 4){
+            
+            bus->ppu->spriteLatch.xCoordinate = bus->ppu->secondaryOam.data[bus->ppu->spriteLatchCounter + 3];
+          
+          
+          
+
+        } else if(bus->ppu->dotx % 8 == 5){
+          // choose between 8x16 or 8x8 sprite mode
+          if(getBit(bus->ppu->ctrl, 5) == 0){
+
+
+            if(getBit(bus->ppu->ctrl, 3) != 0){
+              patternTableOffset = 0x1000;
             } else {
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)));
+              patternTableOffset = 0;
+            }
+
+
+            if((bus->ppu->spriteLatch.yCoordinate <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->spriteLatch.yCoordinate + 8) >= (bus->ppu->scanLine & 0xff))){
+              if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+                bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (bus->ppu->scanLine  - bus->ppu->spriteLatch.yCoordinate));
+      
+              } else {
+ 
+                bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + (7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)));
+  
+              }
+            } else {
+              bus->ppu->spriteLatch.bitPlaneLo = 0;
 
             }
-          } else {
-            bus->ppu->spriteLatch.bitPlaneLo = 0;
 
-          }
-
-
-        } else {
-          // in 8x16 mode, the patterntable offset is determined by the first bit of the tile number
-          if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
-            patternTableOffset = 0x1000;
 
           } else {
-            patternTableOffset = 0;
-          }
 
+            // in 8x16 mode, the patterntable offset is determined by the first bit of the tile number
+            if((bus->ppu->spriteLatch.tileNumber & 0b1) == 1){
+              patternTableOffset = 0x1000;
 
-
-          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
-
-            
-            tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
-            uint16_t tileNumberTemp;
-
-            // choose between flipping the sprite vertically or not
-            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-
-              if(tileIndex <= 7){
-
-                tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
-
-              } else {
-
-                tileIndex -= 8;
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
-
-              }
-              
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + tileIndex);
             } else {
+              patternTableOffset = 0;
+            }
 
-              if(tileIndex <= 7){
-                // if mirroring is enabled, fetch the second tile first
+            if((bus->ppu->spriteLatch.yCoordinate <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->spriteLatch.yCoordinate + 16) >= (bus->ppu->scanLine & 0xff))){
 
+              
+              tileIndex = (bus->ppu->scanLine & 0xff) - bus->ppu->spriteLatch.yCoordinate;
+              uint16_t tileNumberTemp;
+
+              // choose between flipping the sprite vertically or not
+              if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+
+                if(tileIndex <= 7){
+
+                  tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
+
+                } else {
+
+                  tileIndex -= 8;
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+
+                }
                 
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + tileIndex);
               } else {
 
-                // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
-                tileIndex -= 8;
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                if(tileIndex <= 7){
+                  // if mirroring is enabled, fetch the second tile first
+
+                  
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                } else {
+
+                  // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
+                  tileIndex -= 8;
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                }
+  
+                
+                bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex));
+
               }
- 
+            } else {
+              bus->ppu->spriteLatch.bitPlaneLo = 0;
+
+            }
+
+          }
+
+
+          if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
+
+            // mirror the bits if necessary
+            uint8_t bitPlaneTemp = 0;
+            for(int i = 0; i < 8; ++i){
+              if(getBitFromLeft(bus->ppu->spriteLatch.bitPlaneLo, i) != 0){
+                bitPlaneTemp = setBit(bitPlaneTemp, i);
+              } else {
+                bitPlaneTemp = clearBit(bitPlaneTemp, i);
+              }
+            }
+            bus->ppu->spriteLatch.bitPlaneLo = bitPlaneTemp;
+          }
+
+        } else if(bus->ppu->dotx % 8 == 7){
+
+
+          if(getBit(bus->ppu->ctrl, 5) == 0){
+
+            if(getBit(bus->ppu->ctrl, 3) != 0){
+              patternTableOffset = 0x1000;
+            } else {
+              patternTableOffset = 0;
+            }
+            if((bus->ppu->spriteLatch.yCoordinate <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->spriteLatch.yCoordinate + 8) >= (bus->ppu->scanLine & 0xff))){
+              if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+                bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
+              } else {
+                bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)) + 8));
+
+              }
+            } else {
+              bus->ppu->spriteLatch.bitPlaneHi = 0;
+            }
+
+
+          } else {
+                        
+            if(getBit(bus->ppu->spriteLatch.tileNumber, 0) == 1){
+              patternTableOffset = 0x1000;
+
+            } else {
+              patternTableOffset = 0;
+            }
+
+            if((bus->ppu->spriteLatch.yCoordinate <= (bus->ppu->scanLine & 0xff)) && ((bus->ppu->spriteLatch.yCoordinate + 16) >= (bus->ppu->scanLine & 0xff))){
+              uint16_t tileNumberTemp;
+              tileIndex = (bus->ppu->scanLine & 0xff) - bus->ppu->spriteLatch.yCoordinate;
+
+
+              // if sprite is vertically mirrored or not
+              if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
+
+                if(tileIndex <= 7){
+
+                  tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
+      
+                } else {
+
+                  // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
+                  tileIndex -= 8;
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                }
+                bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (tileIndex + 8));
+              } else {
+                if(tileIndex <= 7){
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                } else {
+                  tileIndex -= 8;
+                  tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                }
               
-              bus->ppu->spriteLatch.bitPlaneLo = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex));
 
-            }
-          } else {
-            bus->ppu->spriteLatch.bitPlaneLo = 0;
-
-          }
-
-        }
-
-
-        if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
-
-          // mirror the bits if necessary
-          uint8_t bitPlaneTemp = 0;
-          for(int i = 0; i < 8; ++i){
-            if(getBitFromLeft(bus->ppu->spriteLatch.bitPlaneLo, i) != 0){
-              bitPlaneTemp = setBit(bitPlaneTemp, i);
-            } else {
-              bitPlaneTemp = clearBit(bitPlaneTemp, i);
-            }
-          }
-          bus->ppu->spriteLatch.bitPlaneLo = bitPlaneTemp;
-        }
-
-      } else if(bus->ppu->dotx % 8 == 7){
-
-
-        if(getBit(bus->ppu->ctrl, 5) == 0){
-
-          if(getBit(bus->ppu->ctrl, 3) != 0){
-            patternTableOffset = 0x1000;
-          } else {
-            patternTableOffset = 0;
-          }
-          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 7) >= bus->ppu->scanLine)){
-            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate) + 8));
-            } else {
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (bus->ppu->spriteLatch.tileNumber << 4) + ((7 - (bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate)) + 8));
-
-            }
-          } else {
-            bus->ppu->spriteLatch.bitPlaneHi = 0;
-          }
-
-
-        } else {
-                      
-          if(getBit(bus->ppu->spriteLatch.tileNumber, 0) == 1){
-            patternTableOffset = 0x1000;
-
-          } else {
-            patternTableOffset = 0;
-          }
-
-          if((bus->ppu->spriteLatch.yCoordinate <= bus->ppu->scanLine) && ((bus->ppu->spriteLatch.yCoordinate + 15) >= bus->ppu->scanLine)){
-            uint16_t tileNumberTemp;
-            tileIndex = bus->ppu->scanLine - bus->ppu->spriteLatch.yCoordinate;
-
-
-            // if sprite is vertically mirrored or not
-            if(getBit(bus->ppu->spriteLatch.attributeData, 7) == 0){
-
-              if(tileIndex <= 7){
-
-                tileNumberTemp = bus->ppu->spriteLatch.tileNumber & 0xfe;
-    
-              } else {
-
-                // minus 8 because we are now > 7, so we need to account for this offset and minus 8 to get the correct offset into memory
-                tileIndex -= 8;
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+                bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex) + 8);
               }
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (tileIndex + 8));
             } else {
-              if(tileIndex <= 7){
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe) + 1;
+              bus->ppu->spriteLatch.bitPlaneHi = 0;
+
+            }
+
+          }
+
+          if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
+
+            // mirror the bits if necessary
+            uint8_t bitPlaneTemp = 0;
+            for(int i = 0; i < 8; ++i){
+              if(getBitFromLeft(bus->ppu->spriteLatch.bitPlaneHi, i) != 0){
+                bitPlaneTemp = setBit(bitPlaneTemp, i);
               } else {
-                tileIndex -= 8;
-                tileNumberTemp = (bus->ppu->spriteLatch.tileNumber & 0xfe);
+                bitPlaneTemp = clearBit(bitPlaneTemp, i);
               }
-            
-
-              bus->ppu->spriteLatch.bitPlaneHi = readPpuBus(bus->ppu, patternTableOffset + (tileNumberTemp << 4) + (7 - tileIndex) + 8);
             }
-          } else {
-            bus->ppu->spriteLatch.bitPlaneHi = 0;
-
+            bus->ppu->spriteLatch.bitPlaneHi = bitPlaneTemp;
           }
 
+
+        } else if(bus->ppu->dotx % 8 == 0){
+
+          // copy into sprite shifters
+          // use >> 2 instead of / 4
+          bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].xCoordinate = bus->ppu->spriteLatch.xCoordinate;
+          bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneLo = bus->ppu->spriteLatch.bitPlaneLo;
+          bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneHi = bus->ppu->spriteLatch.bitPlaneHi;
+          bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].attributeData = bus->ppu->spriteLatch.attributeData & 0b11;
+          bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bgPriorityFlag = ((bus->ppu->spriteLatch.attributeData & 0b100000) >> 5);
+          
+
+
+
+          bus->ppu->spriteLatchCounter += 4;
+          
+          
         }
 
-        if(getBit(bus->ppu->spriteLatch.attributeData, 6) != 0){    
 
-          // mirror the bits if necessary
-          uint8_t bitPlaneTemp = 0;
-          for(int i = 0; i < 8; ++i){
-            if(getBitFromLeft(bus->ppu->spriteLatch.bitPlaneHi, i) != 0){
-              bitPlaneTemp = setBit(bitPlaneTemp, i);
-            } else {
-              bitPlaneTemp = clearBit(bitPlaneTemp, i);
-            }
-          }
-          bus->ppu->spriteLatch.bitPlaneHi = bitPlaneTemp;
-        }
-
-
-      } else if(bus->ppu->dotx % 8 == 0){
-
-        // copy into sprite shifters
-        // use >> 2 instead of / 4
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].xCoordinate = bus->ppu->spriteLatch.xCoordinate;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneLo = bus->ppu->spriteLatch.bitPlaneLo;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bitPlaneHi = bus->ppu->spriteLatch.bitPlaneHi;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].attributeData = bus->ppu->spriteLatch.attributeData & 0b11;
-        bus->ppu->spriteShifters[bus->ppu->spriteLatchCounter >> 2].bgPriorityFlag = ((bus->ppu->spriteLatch.attributeData & 0b100000) >> 5);
-        
-
-
-
-        bus->ppu->spriteLatchCounter += 4;
-        
-        
       }
 
-
-   
-
     }
 
-
-
-    }
     
     
   }

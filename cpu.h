@@ -121,9 +121,9 @@ int bvs(CPU*, Bus*);
 void halt(CPU*);
 
 int clc(Bus*);
-int cld(CPU*);
+int cld(Bus*);
 int cli(Bus*);
-int clv(CPU*);
+int clv(Bus*);
 int cmp(CPU*, Bus*, AddrMode);
 
 int cpx(CPU*, Bus*, AddrMode);
@@ -133,8 +133,8 @@ int dex(CPU*, Bus*);
 int dey(Bus*);
 int eor(CPU*, Bus*, AddrMode);
 int inc(CPU*, Bus*, AddrMode);
-int inx(CPU*);
-int iny(CPU*);
+int inx(Bus*);
+int iny(Bus*);
 
 int jmp(CPU*, Bus*, AddrMode);
 int jsr(CPU*, Bus*);
