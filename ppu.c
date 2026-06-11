@@ -240,10 +240,95 @@ void populatePalette(PPU* ppu){
 
 
 
+
+// pollControllers()
+//    polls controllers for SDL
+void pollControllers(Bus* bus){
+
+
+  SDL_Event event;
+
+  // polls for events at the end of each prerender scanline (once per frame)
+  while (SDL_PollEvent(&event)) {
+  switch (event.type) {
+    case SDL_QUIT:
+      SDL_Quit(); 
+      freeAndExit(bus);
+      break;
+
+    case SDL_KEYDOWN:
+      switch(event.key.keysym.sym){
+        case SDLK_x:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 0);
+          break;
+        case SDLK_z:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 1);
+          break;
+        case SDLK_RSHIFT:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 2);
+          break;
+        case SDLK_RETURN:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 3);
+          break;
+        case SDLK_UP:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 4);
+          break;
+        case SDLK_DOWN:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 5);
+          break;
+        case SDLK_LEFT:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 6);
+          break;
+        case SDLK_RIGHT:
+          bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
+          break;
+        case SDLK_r:
+            reset(bus->cpu, bus);
+            resetPpu(bus->ppu, 0);
+            resetApu(bus->apu);
+          break;
+
+      }
+      break;
+    case SDL_KEYUP:
+      switch(event.key.keysym.sym){
+        case SDLK_x:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 0);
+          break;
+        case SDLK_z:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 1);
+          break;
+        case SDLK_RSHIFT:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 2);
+          break;
+        case SDLK_RETURN:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 3);
+          break;
+        case SDLK_UP:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 4);
+          break;
+        case SDLK_DOWN:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 5);
+          break;
+        case SDLK_LEFT:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
+          break;                  
+
+        case SDLK_RIGHT:
+          bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
+          break;
+      }
+      break;
+    }
+  }
+
+}
+
+
 // drawFramebuffer()
 //   draws Framebuffer to background layer in sdl 
 //   also converts the nes colour palette to rgb values when reading from the frame buffer
-void drawFrameBuffer(PPU* ppu){
+void drawFrameBuffer(Bus* bus){
   //printf("drawing framebuffer \n");
   uint32_t *pixels;
   int pitch;
@@ -252,25 +337,30 @@ void drawFrameBuffer(PPU* ppu){
   const double target_frame_time = 1000.0 / target_fps;
 
 
-  SDL_RenderClear(ppu->renderer);
-  SDL_LockTexture(ppu->texture, NULL, (void**)&pixels, &pitch);
+  SDL_RenderClear(bus->ppu->renderer);
+  SDL_LockTexture(bus->ppu->texture, NULL, (void**)&pixels, &pitch);
 
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
     for(int j = 0; j < WINDOW_WIDTH; ++j){
-      pixels[(i * WINDOW_WIDTH) + j] = ppu->frameBuffer[i][j];
+      pixels[(i * WINDOW_WIDTH) + j] = bus->ppu->frameBuffer[i][j];
 
     }
   }
 
-  SDL_UnlockTexture(ppu->texture);
-  SDL_RenderCopy(ppu->renderer, ppu->texture, NULL, NULL);
-  SDL_RenderPresent(ppu->renderer);
+  SDL_UnlockTexture(bus->ppu->texture);
+  SDL_RenderCopy(bus->ppu->renderer, bus->ppu->texture, NULL, NULL);
+  SDL_RenderPresent(bus->ppu->renderer);
+
+
+  // we poll controllers here because this way we can do it one time exactly 
+  // on scanline 261 and dot 340 only
+  pollControllers(bus);
 
 
   // delay until 16.6667 ms has elasped
-  ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
+  bus->ppu->frameRendering.frame_end = SDL_GetPerformanceCounter();
     
-  elasped_ms = (ppu->frameRendering.frame_end - ppu->frameRendering.frame_start) * 1000.0 / ppu->frameRendering.freq;
+  elasped_ms = (bus->ppu->frameRendering.frame_end - bus->ppu->frameRendering.frame_start) * 1000.0 / bus->ppu->frameRendering.freq;
   if(elasped_ms < target_frame_time){
 
     SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
@@ -1100,7 +1190,7 @@ void tickPpu(Bus* bus){
   if(bus->ppu->dotx == 340 && bus->ppu->scanLine == 261){
 
 
-    drawFrameBuffer(bus->ppu);
+    drawFrameBuffer(bus);
 
 
   } 

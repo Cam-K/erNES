@@ -300,7 +300,10 @@ int spriteEvaluation(PPU*, uint8_t*, int);
 int getEightSixteen(PPU*);
 
 // draws the completed framebuffer to screen in SDL
-void drawFrameBuffer(PPU*);
+void drawFrameBuffer(Bus*);
+void pollControllers(Bus*);
+void freeAndExit(Bus*);
+
 
 
 void incrementCourseX(PPU*);

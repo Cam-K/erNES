@@ -40,7 +40,7 @@ enum flagBits {C, Z, I, D, B, U, V, N};
 #define SHIFTL 4
 
 typedef enum {immediate, accumulator, absolute, absoluteX, absoluteY, absoluteIndir, 
-  zeroPage, zeroPageX, zeroPageY, indirectX, indirectY, relative, indirect}AddrMode;
+  zeroPage, zeroPageX, zeroPageY, indirectX, indirectY, relative, indirect, implied}AddrMode;
 
 
 typedef struct _CPU {
@@ -144,7 +144,7 @@ int lda(CPU*, Bus*, AddrMode);
 int ldx(CPU*, Bus*, AddrMode);
 int ldy(CPU*, Bus*, AddrMode);
 int lsr(CPU*, Bus*, AddrMode);
-int nop(Bus*);
+int nop(Bus*, AddrMode);
 
 int ora(CPU*, Bus*, AddrMode);
 

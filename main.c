@@ -47,15 +47,11 @@
 #include "apu.h"
 #include <errno.h>
 #include <dirent.h>
-// #include <gtk-3.0/gtk/gtk.h>
 
 
 
 #define MAX_STR 128
 
-// original resolution of Nintendo
-
-// this includes the hblanking period as well
 
 void parseTwoHexNums(char*, uint16_t*, uint16_t*);
 
@@ -921,114 +917,8 @@ void nesMainLoop(Bus* bus){
           checkForInterrupts(bus);
           fetchOpcode(bus);
           bus->cpu->cycles += decodeAndExecute(bus->cpu, bus);
-            
-            
-        if(bus->ppu->scanLine == 261 && bus->ppu->dotx <= 30){
-
-
-        // polls for events at the end of each prerender scanline (once per frame)
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-              case SDL_QUIT:
-                SDL_Quit(); 
-                freeAndExit(bus);
-                break;
-            
-              case SDL_KEYDOWN:
-                switch(event.key.keysym.sym){
-                  case SDLK_x:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 0);
-                    break;
-                  case SDLK_z:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 1);
-                    break;
-                  case SDLK_RSHIFT:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 2);
-                    break;
-                  case SDLK_RETURN:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 3);
-                    break;
-                  case SDLK_UP:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 4);
-                    break;
-                  case SDLK_DOWN:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 5);
-                    break;
-                  case SDLK_LEFT:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 6);
-                    break;
-                  case SDLK_RIGHT:
-                    bus->controller1.sdlButtons = setBit(bus->controller1.sdlButtons, 7);
-                    break;
-                  case SDLK_r:
-                      reset(bus->cpu, bus);
-                      resetPpu(bus->ppu, 0);
-                      resetApu(bus->apu);
-                    break;
-
-                }
-                break;
-              case SDL_KEYUP:
-                switch(event.key.keysym.sym){
-                  case SDLK_x:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 0);
-                    break;
-                  case SDLK_z:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 1);
-                    break;
-                  case SDLK_RSHIFT:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 2);
-                    break;
-                  case SDLK_RETURN:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 3);
-                    break;
-                  case SDLK_UP:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 4);
-                    break;
-                  case SDLK_DOWN:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 5);
-                    break;
-                  case SDLK_LEFT:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 6);
-                    break;                  
-
-                  case SDLK_RIGHT:
-                    bus->controller1.sdlButtons = clearBit(bus->controller1.sdlButtons, 7);
-                    break;
-                }
-                break;
-                case SDL_MOUSEBUTTONDOWN:
-                  processLightGunInput = 1;
-                  mouseX = event.motion.x;
-                  mouseY = event.motion.y;
-                  bus->controller2.triggerPulled = 1;
-                  break;
-                  
-                case SDL_MOUSEBUTTONUP:
-                  bus->controller2.triggerPulled = 0;
-                  break;
-              }
-            }
-
-            bus->ppu->frames++;
-          }
-
-          //bus->ppu->scanLine++;
-          //bus->ppu->scanLineSprites++;
-          //bus->ppu->dotx = 0;
-
-          bus->cpu->cycles = 0;
-
-          if(bus->ppu->frames >= 20){
-             //freeAndExit(bus);
-          }
-
-      
-        
-
- 
        
-  }
+      }
 }
 
 

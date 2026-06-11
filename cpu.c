@@ -167,6 +167,9 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
     case 0x01:
       cyclesCompleted = ora(cpu, bus, indirectX); 
       break;
+    case 0x04:
+      cyclesCompleted = nop(bus, zeroPage);
+      break;
     case 0x05:
       cyclesCompleted = ora(cpu, bus, zeroPage);
       break;
@@ -182,6 +185,9 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
     case 0x0a:
       cyclesCompleted = asl(cpu, bus, accumulator);
       break;
+    case 0x0c:
+      cyclesCompleted = nop(bus, absolute);
+      break;
     case 0x0d:
       cyclesCompleted = ora(cpu, bus, absolute);
       break;
@@ -194,6 +200,9 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
     case 0x11:
       cyclesCompleted = ora(cpu, bus, indirectY);
       break;
+    case 0x14:
+      cyclesCompleted = nop(bus, zeroPageX);
+      break;
     case 0x15:
       cyclesCompleted = ora(cpu, bus, zeroPageX);
       break;
@@ -205,6 +214,9 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       break;
     case 0x19:
       cyclesCompleted = ora(cpu, bus, absoluteY);
+      break;
+    case 0x1a:
+      cyclesCompleted = nop(bus, implied);
       break;
     case 0x1d:
       cyclesCompleted = ora(cpu, bus, absoluteX);
@@ -250,6 +262,9 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       break;
     case 0x31:
       cyclesCompleted = and(cpu, bus, indirectY);
+      break;
+    case 0x34:
+      cyclesCompleted = nop(bus, zeroPageX);
       break;
     case 0x35:
       cyclesCompleted = and(cpu, bus, zeroPageX);
@@ -579,7 +594,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = sbc(cpu, bus, immediate);
       break;
     case 0xea:
-      cyclesCompleted = nop(bus);
+      cyclesCompleted = nop(bus, implied);
       break;
     case 0xec:
       cyclesCompleted = cpx(cpu, bus, absolute);
@@ -619,7 +634,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
     default:
       printf("illegal instruction: %d - 0x%x at %x \n", bus->cpu->opcode, bus->cpu->opcode, cpu->pc);
       printf("defaulting to NOP \n");
-      cyclesCompleted = nop(bus);
+      cyclesCompleted = nop(bus, implied);
       
       break;
   } 
@@ -1460,13 +1475,11 @@ int lsr(CPU* cpu, Bus* bus, AddrMode mode){
   }
 }
 
-int nop(Bus* bus){
+int nop(Bus* bus, AddrMode mode){
   bus->cpu->pc++;
+  addressModeDecode(bus->cpu, bus, mode);
 
-  // dummy read
-  readBus(bus, bus->cpu->pc);
 
-  return 2;
 }
 
 int ora(CPU* cpu, Bus* bus, AddrMode mode){
@@ -1996,6 +2009,8 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
   uint8_t zeroPageAddr;
   uint8_t prevValue;
   switch(mode){
+    case implied:
+      return readBus(bus, cpu->pc);
     case immediate:
       return readBus(bus, ++cpu->pc);
     case accumulator:

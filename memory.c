@@ -412,6 +412,10 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
               bus->mmc1.shiftRegister.reg = 0x10;
             }
           }
+
+          // we copy mmc1 registers into two places because in some parts of the code,
+          // we need access to them when only the PPU pointer is sent as an argument to
+          // the function. 
           copyMmc1(&bus->mmc1, &bus->ppu->mmc1Copy);
         }
         break;
