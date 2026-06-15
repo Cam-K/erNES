@@ -2175,7 +2175,7 @@ void checkZFlag(CPU* cpu, uint8_t val){
   }
 }
 
-// operationFlag refers to whether an add, sub, ror, or rol operation occured 
+// operationFlag refers to whether an add, ror, or rol operation occured 
 // and will check the Carry Flag accordingly
 //
 // checkCFlag will perform a bitwise operation bit by bit, 
@@ -2183,7 +2183,7 @@ void checkZFlag(CPU* cpu, uint8_t val){
 // it will check to see whether the carry was set
 // and set the cpu flag to that
 //
-// For all operations except add:
+// For all operations except add and sub:
 //   operand1 - is the value after the operation was performed
 //   operand2 - is the value before the operation will be performed
 // For add operation:

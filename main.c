@@ -441,6 +441,7 @@ void interpreter(Bus* bus){
 
 }
 
+// starts the NES emulator
 void startNes(char* romPath, int screenScaling){
   printf("Starting NES emulator \n");
 
@@ -860,8 +861,7 @@ void startNes(char* romPath, int screenScaling){
   }
 
 
-  
-    SDL_Quit();
+
     freeAndExit(&bus);
     
     return;
@@ -880,7 +880,6 @@ void startNes(char* romPath, int screenScaling){
 void nesMainLoop(Bus* bus){
       uint8_t oppCode;
       int mirroring = bus->ppu->mirroring;
-      SDL_Event event;
       uint64_t freq = SDL_GetPerformanceFrequency();
       uint64_t frame_start = 0;
       uint64_t frame_end = 0;
@@ -1279,16 +1278,20 @@ void freeAndExit(Bus* bus){
   
 
   printf("Freeing memory and exiting... \n");
+
+  
   SDL_DestroyTexture(bus->ppu->texture);
   SDL_DestroyRenderer(bus->ppu->renderer);
   SDL_DestroyWindow(bus->ppu->win);
+  SDL_Quit();
+
+
   for(int i = 0; i < WINDOW_HEIGHT; ++i){
 
     free(bus->ppu->frameBuffer[i]);
   }
 
   free(bus->ppu->frameBuffer);
-  free(bus->ppu->chrrom);
   free(bus->ppu->oam);
   free(bus->ppu->paletteram);
   for(int i = 0; i < bus->ppu->ppubus->numOfBlocks; ++i){

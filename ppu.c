@@ -37,7 +37,6 @@
 //   initializes PPU
 void initPpu(PPU* ppu, int banks){
 
-  ppu->chrrom = calloc(8192, sizeof(uint8_t));
   ppu->oam = calloc(256, sizeof(uint8_t));
   ppu->paletteram = calloc(32, sizeof(uint8_t));
   
@@ -252,7 +251,6 @@ void pollControllers(Bus* bus){
   while (SDL_PollEvent(&event)) {
   switch (event.type) {
     case SDL_QUIT:
-      SDL_Quit(); 
       freeAndExit(bus);
       break;
 

@@ -1023,7 +1023,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
     }
 
   } else if (addr >= 0x3000 && addr <= 0x3eff){
-    // TODO: implement nametable mirroring thru 0x3000-0x3fff
+    // unused memory
     return; 
   } else if (addr >= 0x3f00 && addr <= 0x3f1f){
 

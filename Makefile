@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = `sdl2-config --cflags` -I. -g -O1 #`pkg-config --cflags gtk+-3.0`
-LDFLAGS = `sdl2-config --libs` -lcjson -lm #`pkg-config --libs gtk+-3.0`
+CFLAGS = `sdl2-config --cflags` -I. -g -O1
+LDFLAGS = `sdl2-config --libs` -lcjson -lm 
 TARGET = ernes
 BUILDDIR = ./build
 
