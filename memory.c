@@ -700,7 +700,6 @@ uint8_t readBus(Bus* bus, uint16_t addr){
             // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the last fixed bank
             uint8_t suRomMemArrOffset = 0;
 
-            // TODO: implement outer block for last fixed PRG-ROM bank
             if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
               if((getBit(bus->mmc1.chrBank0.reg, 4) == 0)){
                 //printf("selecting block 1 \n");

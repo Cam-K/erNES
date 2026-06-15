@@ -841,10 +841,6 @@ void tickPpu(Bus* bus){
               for(int i = 1; i < 4; ++i){
                 bus->ppu->secondaryOam.data[(bus->ppu->secondaryOam.spriteCounter * 4) + i] = bus->ppu->oam[(bus->ppu->oamIndex.n * 4) + i]; 
               }
-              if(bus->ppu->scanLine == 239){
-                printf("%d \n", bus->ppu->secondaryOam.data[bus->ppu->secondaryOam.spriteCounter * 4]);
-
-              }
 
               if(bus->ppu->oamIndex.n == 0){
                 bus->ppu->spriteZeroOnNextScanline = 1;

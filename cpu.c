@@ -22,6 +22,7 @@
 
 
 #include "cpu.h"
+#include "general.h"
 
 
 int pageFlag;
@@ -140,7 +141,6 @@ int irq(CPU* cpu, Bus* bus){
   temp = (uint16_t)readBus(bus, 0xffff);
   temp = temp << 8;
   cpu->pc = cpu->pc | temp;
-  //printf("Setting pc to %d \n", cpu->pc);
 
 
   return 7;
@@ -1659,14 +1659,12 @@ int rti(CPU* cpu, Bus* bus){
   cpu->pf = setBit(cpu->pf, U);
   cpu->pc = (uint16_t)popStack(cpu, bus);
   cpu->pc = (cpu->pc | (((uint16_t)popStack(cpu, bus)) << 8));
-  //printf("cpu->pc after popping in rti: %x \n", cpu->pc);
 
   // dummy read
   readBus(bus, 0x100 + cpu->sp);
 
 
   // clears the brk flag
-  // 
   cpu->pf = clearBit(cpu->pf, 4);
   
 
@@ -1723,19 +1721,16 @@ int sbc(CPU* cpu, Bus* bus, AddrMode mode){
   cpu->a += getBit(cpu->pf, C);
   temp = value + prevA + getBit(cpu->pf, C);
   
-  //printf("sbc: value - %d ; prevA - %d \n", value, prevA);
 
   checkVFlag(cpu, value, prevA, SUB);
   checkZFlag(cpu, cpu->a);
   checkNFlag(cpu, cpu->a);
 
   
-  //printf("temp: %d \n", temp);
+
   if(temp >= 256){
-    //puts("setting C flag \n");
     cpu->pf = setBit(cpu->pf, C);
   } else {
-    //puts("clearing C flag \n");
     cpu->pf = clearBit(cpu->pf, C);
   }
 
@@ -2143,6 +2138,8 @@ void checkVFlag(CPU* cpu, uint8_t val, uint8_t prevVal, uint8_t operationFlag){
   uint8_t cf = 0;
 
   if(operationFlag == SUB || operationFlag == ADD){
+
+    // formula for calculating overflow flag
     cf = (~(prevVal ^ val) & (prevVal ^ cpu->a)) & 0x80;
 
 
@@ -2186,70 +2183,41 @@ void checkZFlag(CPU* cpu, uint8_t val){
 // it will check to see whether the carry was set
 // and set the cpu flag to that
 //
-// operand1 - is the value after the operation was performed
-// operand2 - is the value before the operation will be performed
+// For all operations except add:
+//   operand1 - is the value after the operation was performed
+//   operand2 - is the value before the operation will be performed
+// For add operation:
+//   operand1 - is operand1 of the add equation
+//   operand2 - is operand2 of the add equation
 void checkCFlag(CPU* cpu, uint8_t operand1, uint8_t operand2, uint8_t operationFlag){
   uint8_t bit1;
   uint8_t bit2;
   uint8_t carry = 0;
+  uint16_t sum;
+  
   if(operationFlag == ROTATEL || operationFlag == SHIFTL){
 
     cpu->pf = (getBit(operand2, 7) != 0 ? setBit(cpu->pf, C) : clearBit(cpu->pf, C));
-
-    return;
   } else if(operationFlag == ROTATER){
     if(getBit(operand2, 0) != 0){
       cpu->pf = setBit(cpu->pf, C);
     } else {
       cpu->pf = clearBit(cpu->pf, C);
     }
- 
-    return;
-  } 
-
-     
-
-  if(operationFlag == SHIFTL){
-    // operand2 becomes value before the operation was performed
-    // operand1 becomes value after the operation was performed
+  } else if(operationFlag == ADD){
 
 
-  }
+    sum = (uint16_t)operand1 + (uint16_t)operand2 + getBit(cpu->pf, C);
 
-  // find twos complement of a number
-  if(operationFlag == SUB){
-    //operand2 = ~operand2;
-    //int8_t tempoper1 = (int8_t)operand1;  
-    //int8_t tempoper2 = (int8_t)operand2;  
-    //if(tempoper1 - tempoper2 < 0){
-    //  
-    //}
+    if(sum > 255){
+      cpu->pf = setBit(cpu->pf, C);
+
+    } else {
+      cpu->pf = clearBit(cpu->pf, C);
+    }
     
   }
-
   
-  for(int i = 0; i <= 7; ++i){
-    bit1 = getBit(operand1, i) >> i; 
-    bit2 = getBit(operand2, i) >> i; 
-    //printf("iteration %d \n", i);
-    //printf("bit1 %d \n", bit1);
-    //printf("bit2 %d \n", bit2);
-    //printf("carry %d \n", carry);
-    if(i == 0 && bit1 + bit2 + carry + getBit(cpu->pf, C) >= 2){
-      carry = 1;
-      continue;
-    } 
-    if(bit1 + bit2 + carry >= 2){
-      carry = 1;
-    } else {
-      carry = 0;
-    }
-  }
-  if(carry == 1){
-    //printf("Setting carry! \n");
-    cpu->pf = setBit(cpu->pf, C);
-  } else {
-    //printf("Clearing carry! \n");
-    cpu->pf = clearBit(cpu->pf, C);
-  }
+
+
 }
