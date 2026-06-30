@@ -316,5 +316,11 @@ void tickPpu(Bus*);
 uint8_t parseSpriteShifter(PPU*, int);
 
 
-uint8_t spriteOutputProcess(PPU*);
+// encapsulated ppu processes
+uint8_t spriteOutputProcess(PPU*, uint8_t, uint8_t*);
 uint8_t backgroundOutputProcess(PPU*);
+void priorityMux(PPU*, uint8_t, uint8_t, uint8_t);
+void shiftShiftRegisters(PPU*);
+void fetchAndFillLatches(PPU*, uint16_t);
+void vRegisterLogic(PPU*);
+void spriteEvaluationAndProcess(PPU* ppu);

@@ -916,7 +916,6 @@ void nesMainLoop(Bus* bus){
           checkForInterrupts(bus);
           fetchOpcode(bus);
           bus->cpu->cycles += decodeAndExecute(bus->cpu, bus);
-       
       }
 }
 
