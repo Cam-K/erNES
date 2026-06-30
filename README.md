@@ -27,6 +27,9 @@ make
 This will create a directory ``./build`` and generate the executable in it
 
 ## Libraries Needed (Ubuntu)
+
+erNES requires cjson and SDL2 installed on your system. These can be installed with the following command on Ubuntu:
+
 ``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0-0``
 
 ## Usage
