@@ -637,7 +637,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = nop(bus, implied);
       
       break;
-  } 
+  }
   }
   if(cyclesCompleted == -1){
     printf("Error detected, halting excution \n");
@@ -1479,6 +1479,22 @@ int nop(Bus* bus, AddrMode mode){
   bus->cpu->pc++;
   addressModeDecode(bus->cpu, bus, mode);
 
+  if(mode == zeroPage){
+    return 3;
+
+  } else if(mode == zeroPageX || mode == absolute){
+    return 4;
+
+  } else if(mode == absoluteX){
+    if(pageFlag == 1){
+      return 5;
+
+    } else {
+      return 0;
+    }
+
+  }
+  return 2;
 
 }
 
@@ -1953,11 +1969,6 @@ int tya(Bus* bus){
 
 void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 
-
-
-  uint16_t lowByte, highByte;
-  uint8_t zeroPageAddr;
-
   switch(mode){
     case absolute:
       writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL, value);
@@ -2000,9 +2011,9 @@ void addressModeDecodeWrite(uint8_t value, CPU* cpu, Bus* bus, AddrMode mode){
 
 
 uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
-  uint16_t lowByte, highByte, byte, addr, currPage, newPage;
+  uint16_t currPage, newPage;
   uint8_t zeroPageAddr;
-  uint8_t prevValue;
+
   switch(mode){
     case implied:
       return readBus(bus, cpu->pc);
@@ -2190,9 +2201,8 @@ void checkZFlag(CPU* cpu, uint8_t val){
 //   operand1 - is operand1 of the add equation
 //   operand2 - is operand2 of the add equation
 void checkCFlag(CPU* cpu, uint8_t operand1, uint8_t operand2, uint8_t operationFlag){
-  uint8_t bit1;
-  uint8_t bit2;
-  uint8_t carry = 0;
+
+
   uint16_t sum;
   
   if(operationFlag == ROTATEL || operationFlag == SHIFTL){

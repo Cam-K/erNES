@@ -187,7 +187,6 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
 // hard-coded for nes memory map
 // does not make use of the bounds checking of the starAddr and endAddr for each Mem struct
 void writeBus(Bus* bus, uint16_t addr, uint8_t val){
-  int prevVal;
   
 
   // the reason why writeBus() and readBus() tick the PPU is because this allows us to get cycle-level grainularity
@@ -388,7 +387,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
               }
 
               // shift register contents gets copied into internal register
-              if(addr >= 0x8000 & addr <= 0x9fff){
+              if((addr >= 0x8000) & (addr <= 0x9fff)){
                 bus->mmc1.control.reg = bus->mmc1.shiftRegister.reg;
                 if((bus->mmc1.control.reg & 0b11) == 2){
                   bus->ppu->mirroring = 1;
@@ -399,11 +398,11 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
                 } else if((bus->mmc1.control.reg & 0b11) == 1){
                   bus->ppu->mirroring = 3;
                 }
-              } else if(addr >= 0xa000 & addr <= 0xbfff){
+              } else if((addr >= 0xa000) & (addr <= 0xbfff)){
                 bus->mmc1.chrBank0.reg = bus->mmc1.shiftRegister.reg;
-              } else if(addr >= 0xc000 & addr <= 0xdfff){
+              } else if((addr >= 0xc000) & (addr <= 0xdfff)){
                 bus->mmc1.chrBank1.reg = bus->mmc1.shiftRegister.reg;
-              } else if(addr >= 0xe000 & addr <= 0xffff){
+              } else if((addr >= 0xe000) & (addr <= 0xffff)){
                 bus->mmc1.prgBank.reg = bus->mmc1.shiftRegister.reg;
               }
 
@@ -484,12 +483,12 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 // hard-coded for nes memory map
 // does not make use of the bounds checking of the starAddr and endAddr for each Mem struct
 uint8_t readBus(Bus* bus, uint16_t addr){
-  //printf("Reading address %x \n", addr);
-  uint8_t temp = 0;
-  uint16_t temp16 = 0;
 
-  // the reason why writeBus() and readBus() tick the PPU is because this allows us to get cycle-level grainularity
-  // without having a cpu emulator that is cycle-accurate.
+  
+  uint8_t temp = 0;
+
+  // the reason why writeBus() and readBus() tick the PPU is because this allows us to interleave
+  // the ppu ticks during the reads/writes, as there are 1 read/write per cpu cycle, and 3 ppu ticks per cpu cycle
   tickPpu(bus);
   tickPpu(bus);
   tickPpu(bus);
@@ -499,7 +498,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
     return 0;
 
   }
-  if(addr >= 0 && addr <= 0x07ff){
+  if(addr <= 0x07ff){
     return bus->memArr[0].contents[addr];
   } else if(addr >= 0x0800 && addr <= 0x0fff){
     return bus->memArr[0].contents[addr - 0x800];
@@ -639,7 +638,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         }
         break;
       case 1:
-        if(addr >= 0x6000 & addr <= 0x7fff){
+        if((addr >= 0x6000) & (addr <= 0x7fff)){
           // index 1 corresponds to PRG-RAM for mapper 1
           if(bus->presenceOfPrgRam == 1){
             
@@ -657,11 +656,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           // the mask used for prgbank to index into memArr can vary on a few factors, so thus we use a function to find it
           uint8_t maskForPrgBank = findPrgBankMask(bus, &prgBankTemp);
           
-          // TODO: Implement outer 256kb bankswitching for the fixed 16kb bank
-          int divideOffsetIntoMemArr = 0;
           // 32 kb mode
-
-          
           if(((bus->mmc1.control.reg & 0b1100) == 0) || ((bus->mmc1.control.reg & 0b1100) == 0b0100)){
             //printf("32kb mode \n");
 

@@ -360,9 +360,7 @@ void drawFrameBuffer(Bus* bus){
     
   elasped_ms = (bus->ppu->frameRendering.frame_end - bus->ppu->frameRendering.frame_start) * 1000.0 / bus->ppu->frameRendering.freq;
   if(elasped_ms < target_frame_time){
-
     SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
-    
   }
 
 }
@@ -421,7 +419,7 @@ uint8_t parseSpriteShifter(PPU* ppu, int index){
 }
 
 // spriteOutputProcess()
-//     enumerates through sprite shifters (filled during the previous line) to find the pixel to output.
+//     enumerates through the sprite shifters (filled during the previous line in spriteEvaluationAndProcess) to find the pixel to output.
 //     the first sprite shifter to output a none-zero value is selected.
 uint8_t spriteOutputProcess(PPU* ppu, uint8_t finalBackgroundPixel, uint8_t* spritePriority){
 
@@ -481,7 +479,7 @@ uint8_t spriteOutputProcess(PPU* ppu, uint8_t finalBackgroundPixel, uint8_t* spr
 }
 
 // priorityMux()
-//     logic to figure out whether to output the foreground, background, or backdrop colour
+//     selects background, foreground, or backdrop pixel to display and paints this to the framebuffer
 void priorityMux(PPU* ppu, uint8_t finalSpritePixel, uint8_t finalBackgroundPixel, uint8_t spritePriority){
 
     uint8_t finalPixel;
@@ -531,7 +529,7 @@ void shiftShiftRegisters(PPU* ppu){
 //     performs PPU VRAM fetches to fill the internal latches on the corresponding dot with the v-register
 void fetchAndFillLatches(PPU* ppu, uint16_t tempV){
 
-  uint16_t patternTableOffset;
+  uint16_t patternTableOffset = 0;
   if(ppu->dotx % 8 == 1){
     #if TICKPPUDEBUGLOG == 1
     printf("\t fetching nametable byte at %x \n", 0x2000 + tempV);
@@ -613,9 +611,7 @@ void fetchAndFillLatches(PPU* ppu, uint16_t tempV){
 //     fetches bits from attribute and background shift registers to 
 //     come up with the final background pixel to be outputted. 
 uint8_t backgroundOutputProcess(PPU* ppu){
-  uint16_t patternTableOffset = 0;
   uint16_t currentAttributeData;
-  uint8_t currentAttributeDataSprites = 0;
   uint16_t currentAttributeDataLo;
   uint16_t currentAttributeDataHi;
   uint16_t bitLo_16;
@@ -1087,9 +1083,9 @@ void spriteEvaluationAndProcess(PPU* ppu){
 #define TICKPPUDEBUGLOG 0
 
 
+// tickPpu()
+//     ticks the ppu forward one cycle (1 PPU cycle produces 1 dot between scanlines 0-239 and dots 1-256)
 void tickPpu(Bus* bus){
-  // 1 PPU cycle = 1 dot
-
   uint16_t tempV;
 
   // 4 bit value, with 2 lsb containing the pixel info and the upper 2 msb containing the attribute data
@@ -1097,26 +1093,9 @@ void tickPpu(Bus* bus){
 
   // 4 bit value, with 2 lsb containing the pixel info and the upper 2 msb containing the attribute data
   uint8_t finalSpritePixel = 0;
-
-  // the final pixel chosen to be outputted to the frame buffer (chosen between finalSpritePixel and finalBackgroundPixel)
-  uint8_t finalPixel = 0;
-
-  uint16_t patternTableOffset = 0;
-  uint16_t currentAttributeData;
-  uint8_t currentAttributeDataSprites = 0;
-  uint16_t currentAttributeDataLo;
-  uint16_t currentAttributeDataHi;
-  uint16_t bitLo_16;
-  uint16_t bitHi_16;
-  uint8_t bitLo;
-  uint8_t bitHi;
-  uint8_t bitsCombined = 0;
-  uint8_t bitsCombinedBackground = 0;
   uint8_t spritePriority = 0;
-  uint8_t tileIndex;
-  double elasped_ms;
-  const double target_fps = 60.0;
-  const double target_frame_time = 1000.0 / target_fps;
+
+
 
   #if TICKPPUDEBUGLOG == 1
   if(bus->ppu->dotx == 0){
@@ -1155,6 +1134,7 @@ void tickPpu(Bus* bus){
   }
   // ****** priority mux *******
   if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
+    
     priorityMux(bus->ppu, finalSpritePixel, finalBackgroundPixel, spritePriority);
   }
 

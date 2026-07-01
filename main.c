@@ -125,10 +125,7 @@ void freeAndExit(Bus*);
 int main(int argc, char* argv[]){
 
 
-  
 
-  uint8_t oppCode;
-  
 
 
   // general purpose iterator variables
@@ -335,15 +332,15 @@ void parseTwoHexNums(char* input, uint16_t* start, uint16_t* end){
 
 
 void interpreter(Bus* bus){
-  uint8_t oppCode;
+
   uint16_t i;
   uint16_t j;
   uint16_t start;
   uint16_t end;
   uint16_t val;
   uint16_t addr;
-  char input[MAX_STR]; 
   long inputNum;
+  char input[MAX_STR]; 
   printf("***** type 'h' to print help ******\n");
   while(1){
     fetchOpcode(bus);
@@ -451,14 +448,10 @@ void startNes(char* romPath, int screenScaling){
   int wrongFileFlag = 0;
   int numOfPrgRoms;
   int numOfChrRoms;
-  int cycles;
   uint8_t byte10;
-  uint16_t prgNvramSize;
 
   uint16_t prgRamSize; // 0 - no PRG-RAM
   int tvSystem;
-  uint8_t oppCode;
-  int scanlines = 0;
   uint8_t tempInt;
   int mirroring;
 
@@ -468,16 +461,16 @@ void startNes(char* romPath, int screenScaling){
 
   
   if(romPath != NULL){
+
     romPtr = fopen(romPath, "rb");
 
-
-
-    
     if(romPtr == NULL){
       printf("File not found \n");
       exit(1);
     }
-  } 
+  } else {
+    exit(1);
+  }
 
   
   // parses header and checks to see if it is an .ines file
@@ -878,23 +871,6 @@ void startNes(char* romPath, int screenScaling){
 // TODO: Ensure that each instruction consumes the right amount of reads/writes because
 // ticking the rest of the system now relies on this being correct.
 void nesMainLoop(Bus* bus){
-      uint8_t oppCode;
-      int mirroring = bus->ppu->mirroring;
-      uint64_t freq = SDL_GetPerformanceFrequency();
-      uint64_t frame_start = 0;
-      uint64_t frame_end = 0;
-      double elasped_ms;
-      int sdlFrames = 0;
-      int fps_lastTime = SDL_GetTicks();
-      int fps_current = 0;
-      int processLightGunInput = 0;
-      const double target_fps = 60.0;
-      const double target_frame_time = 1000.0 / target_fps;
-      const float aspectRatio = (float) WINDOW_WIDTH / WINDOW_HEIGHT;
-      int mouseX;
-      int mouseY;
-      int currCycles;
-
 
       bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * bus->ppu->frameRendering.screenScaling, WINDOW_HEIGHT * bus->ppu->frameRendering.screenScaling, SDL_WINDOW_RESIZABLE);
       
@@ -944,7 +920,6 @@ void populateProcStructWithJson(cJSON* json, processorState* procStat, uint8_t o
   procStat->p = cJSON_GetObjectItemCaseSensitive(json, "p")->valueint;
   procStat->s = cJSON_GetObjectItemCaseSensitive(json, "s")->valueint;
   procStat->pc = cJSON_GetObjectItemCaseSensitive(json, "pc")->valueint;
-  char tempStr[MAX_STR];
   procStat->lastOpCode = opcode;
 
 
@@ -1179,11 +1154,9 @@ int jsonTester(char* file, Bus* bus, processorState* state){
   cJSON* final;
   cJSON* initRam;
   cJSON* finalRam;
-  processorState initStruct;
   processorState finalStruct;
 
-  uint8_t oppCode;
-  int errorCode;
+  int errorCode = 0;
   char input[MAX_STR];
   strcpy(input, "0");
 
@@ -1216,7 +1189,7 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     //printf("Executing Oppcode 0x%x at %d\n", oppCode, bus->cpu->pc);
     decodeAndExecute(bus->cpu, bus);
 
-    populateProcStructWithJson(final, &finalStruct, oppCode);
+    populateProcStructWithJson(final, &finalStruct, bus->cpu->opcode);
     //if(SUPPRESSOUTPUT == 0)
     //  printCpuWithJson(bus->cpu, finalStruct, errorCode);
 
