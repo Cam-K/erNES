@@ -2,9 +2,9 @@
 A Nintendo Entertainment System emulator, written in C.
 
 <p align="center">
-  <img src="https://i.imgur.com/RoONmfS.png" alt="Super Mario Bros" width="33%">
-  <img src="https://i.imgur.com/qPbXxxN.png" alt="Castlevania" width="33%">
-  <img src="https://i.imgur.com/0TF6qSS.png" alt="Zelda" width="33%">
+  <img src="https://i.imgur.com/RoONmfS.png" alt="Super Mario Bros">
+  <img src="https://i.imgur.com/qPbXxxN.png" alt="Castlevania">
+  <img src="https://i.imgur.com/0TF6qSS.png" alt="Zelda">
 </p>
 
 ## Description
