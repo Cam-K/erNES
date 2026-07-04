@@ -48,10 +48,10 @@ void initPpu(PPU* ppu, int banks){
     ppu->ppubus->memArr = calloc(1, sizeof(Mem));
   }
   ppu->ppubus->numOfBlocks = banks;
-  ppu->frameBuffer = malloc(sizeof(uint32_t*) * WINDOW_HEIGHT);
+  ppu->frameBuffer = malloc(sizeof(uint32_t*) * FRAMEBUFFER_HEIGHT);
   
-  for(int i = 0; i < WINDOW_HEIGHT; ++i){
-    ppu->frameBuffer[i] = calloc(WINDOW_WIDTH, sizeof(uint32_t));
+  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
+    ppu->frameBuffer[i] = calloc(FRAMEBUFFER_WIDTH, sizeof(uint32_t));
   } 
 
   
@@ -334,13 +334,13 @@ void drawFrameBuffer(Bus* bus){
   const double target_fps = 60.0;
   const double target_frame_time = 1000.0 / target_fps;
 
-
   SDL_RenderClear(bus->ppu->renderer);
   SDL_LockTexture(bus->ppu->texture, NULL, (void**)&pixels, &pitch);
+ 
 
-  for(int i = 0; i < WINDOW_HEIGHT; ++i){
-    for(int j = 0; j < WINDOW_WIDTH; ++j){
-      pixels[(i * WINDOW_WIDTH) + j] = bus->ppu->frameBuffer[i][j];
+  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
+    for(int j = 0; j < FRAMEBUFFER_WIDTH; ++j){
+      pixels[(i * FRAMEBUFFER_WIDTH) + j] = bus->ppu->frameBuffer[i][j];
 
     }
   }
@@ -419,8 +419,8 @@ uint8_t parseSpriteShifter(PPU* ppu, int index){
 }
 
 // spriteOutputProcess()
-//     enumerates through the sprite shifters (filled during the previous line in spriteEvaluationAndProcess) to find the pixel to output.
-//     the first sprite shifter to output a none-zero value is selected.
+//     enumerates through the sprite shifters (filled during the previous line in spriteEvaluationAndProcess()) to find the pixel to output.
+//     the first sprite shifter to output a non-zero value is selected.
 uint8_t spriteOutputProcess(PPU* ppu, uint8_t finalBackgroundPixel, uint8_t* spritePriority){
 
   uint8_t finalSpritePixel = 0;
@@ -429,7 +429,7 @@ uint8_t spriteOutputProcess(PPU* ppu, uint8_t finalBackgroundPixel, uint8_t* spr
 
       // we use the bitsCombined variable as a state-machine of sorts.
       // if bitsCombined == 0, then we know that we haven't found the first non-zero output from a 
-      // sprite-shifter. 
+      // sprite-shifter yet.
       if(bitsCombined == 0){
         bitsCombined = parseSpriteShifter(ppu, i);
       } else {

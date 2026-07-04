@@ -152,6 +152,7 @@ int irq(CPU* cpu, Bus* bus){
 // fetches opcode of the current program counter
 void fetchOpcode(Bus* bus){
   bus->cpu->opcode = readBus(bus, bus->cpu->pc);
+
 }
 
 // returns how many cycles have been executed

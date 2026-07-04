@@ -1,6 +1,11 @@
 # erNES
 A Nintendo Entertainment System emulator, written in C.
 
+<p align="center">
+  <img src="https://imgur.com/a/l2NXsYk" alt="Super Mario Bros" width="33%">
+  <img src="https://imgur.com/a/3FEhOLb" alt="Castlevania" width="33%">
+  <img src="https://imgur.com/a/sZoqKZ7" alt="Castlevania" width="33%">
+</p>
 
 ## Description
 
@@ -28,7 +33,7 @@ This will create a directory ``./build`` and generate the executable in it
 
 ## Libraries Needed (Ubuntu)
 
-erNES requires cjson and SDL2 installed on your system. These can be installed with the following command on Ubuntu:
+erNES requires cjson and SDL2 to be installed on your system. These can be installed with the following command on Ubuntu:
 
 ``sudo apt install libcjson-dev libcjson1 libsdl2-dev libsdl2-2.0-0``
 
@@ -51,10 +56,4 @@ erNES requires cjson and SDL2 installed on your system. These can be installed w
 | Shift         | Select           | 
  
 
-
-
-## Screenshots
-
-![Super Mario Bros](https://i.imgur.com/ehnudBK.png)
-![Castlevania](https://i.imgur.com/eMoT9Kq.png)
 

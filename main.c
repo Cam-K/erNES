@@ -295,7 +295,7 @@ int main(int argc, char* argv[]){
 
 
   if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0 && NESEMU == 1){
-    printf("%d \n", argc);
+
     if(argc >= 2){
       startNes(argv[1], atoi(screenScaling));
     }
@@ -680,6 +680,8 @@ void startNes(char* romPath, int screenScaling){
         for(int i = 0; i < numOfChrRoms * 2; ++i){
           initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x1000, Rom, TRUE);
         }
+
+        // last two Mem structs are CHR-RAM
         initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms * 2]), 0x400, Ram, TRUE);
         initMemStruct(&(bus.ppu->ppubus->memArr[(numOfChrRoms * 2) + 1]), 0x400, Ram, TRUE);
 
@@ -872,13 +874,13 @@ void startNes(char* romPath, int screenScaling){
 // ticking the rest of the system now relies on this being correct.
 void nesMainLoop(Bus* bus){
 
-      bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * bus->ppu->frameRendering.screenScaling, WINDOW_HEIGHT * bus->ppu->frameRendering.screenScaling, SDL_WINDOW_RESIZABLE);
+      bus->ppu->win = SDL_CreateWindow("erNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, FRAMEBUFFER_WIDTH * bus->ppu->frameRendering.screenScaling, FRAMEBUFFER_HEIGHT * bus->ppu->frameRendering.screenScaling, SDL_WINDOW_RESIZABLE);
       
 
       bus->ppu->renderer = SDL_CreateRenderer(bus->ppu->win, 1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-      bus->ppu->texture = SDL_CreateTexture(bus->ppu->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
-      SDL_RenderSetLogicalSize(bus->ppu->renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
-      SDL_SetWindowMinimumSize(bus->ppu->win, WINDOW_WIDTH * bus->ppu->frameRendering.screenScaling, WINDOW_HEIGHT * bus->ppu->frameRendering.screenScaling);
+      bus->ppu->texture = SDL_CreateTexture(bus->ppu->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+      SDL_RenderSetLogicalSize(bus->ppu->renderer, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+      SDL_SetWindowMinimumSize(bus->ppu->win, FRAMEBUFFER_WIDTH * bus->ppu->frameRendering.screenScaling, FRAMEBUFFER_HEIGHT * bus->ppu->frameRendering.screenScaling);
       if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
       }
@@ -887,8 +889,8 @@ void nesMainLoop(Bus* bus){
       SDL_RenderPresent(bus->ppu->renderer);
 
       // enter main loop
+      // (SDL keyboard polling occurs in drawFramebuffer())
       while(1){
-        
           checkForInterrupts(bus);
           fetchOpcode(bus);
           bus->cpu->cycles += decodeAndExecute(bus->cpu, bus);
@@ -1258,7 +1260,7 @@ void freeAndExit(Bus* bus){
   SDL_Quit();
 
 
-  for(int i = 0; i < WINDOW_HEIGHT; ++i){
+  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
 
     free(bus->ppu->frameBuffer[i]);
   }

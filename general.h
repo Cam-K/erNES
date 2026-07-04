@@ -32,8 +32,8 @@
 
 // used to suppress debug output
 #define SUPPRESSOUTPUT 1
-#define WINDOW_WIDTH 256
-#define WINDOW_HEIGHT 240
+#define FRAMEBUFFER_WIDTH 256
+#define FRAMEBUFFER_HEIGHT 240
 // general.h
 //   includes helper functions that are useful in many places as well as 
 //   variables and macros in multiple places
