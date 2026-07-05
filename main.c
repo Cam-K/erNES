@@ -339,7 +339,6 @@ void interpreter(Bus* bus){
   uint16_t end;
   uint16_t val;
   uint16_t addr;
-  long inputNum;
   char input[MAX_STR]; 
   printf("***** type 'h' to print help ******\n");
   while(1){
@@ -412,7 +411,6 @@ void interpreter(Bus* bus){
 
     } else if(input[0] == 'w'){
 
-      inputNum = strtol(input + 1, NULL, 16);
       parseTwoHexNums(input + 1, &val, &addr);
 
       writeBus(bus, addr, (uint8_t)val);

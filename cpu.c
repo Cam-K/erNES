@@ -25,9 +25,6 @@
 #include "general.h"
 
 
-int pageFlag;
-
-
 
 void reset(CPU* cpu, Bus* bus){
     cpu->a = 0;
@@ -158,7 +155,7 @@ void fetchOpcode(Bus* bus){
 // returns how many cycles have been executed
 int decodeAndExecute(CPU* cpu, Bus* bus){
   int cyclesCompleted;
-  //printf("\t Executing oppcode: %x at %x \n", oppCode, cpu->pc);
+  //printf("\t Executing oppcode: %x at %x \n", cpu->opcode, cpu->pc);
   
   if(cpu->haltFlag == 0){
   switch(bus->cpu->opcode){
@@ -687,13 +684,13 @@ int adc(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
     
@@ -721,13 +718,13 @@ int and(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
     
@@ -877,7 +874,7 @@ int bit(CPU* cpu, Bus* bus, AddrMode mode){
 }
 
 
-// TODO: recheck how many clock cycles this instruction consumes
+
 int bmi(CPU* cpu, Bus* bus){
   int8_t offset;
   int cycles = 2;
@@ -1113,13 +1110,13 @@ int cmp(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
   }
@@ -1238,13 +1235,13 @@ int eor(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
      return 4;
     case absoluteX:
-     return pageFlag == 1 ? 5 : 4;
+     return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-     return pageFlag == 1 ? 5 : 4;
+     return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
      return 6;
     case indirectY:
-     return pageFlag == 1 ? 6 : 5;
+     return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
 
@@ -1375,13 +1372,13 @@ int lda(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
   }
@@ -1406,7 +1403,7 @@ int ldx(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     default:
       return -1;
 
@@ -1432,7 +1429,7 @@ int ldy(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     default:
       return -1;
 
@@ -1487,7 +1484,7 @@ int nop(Bus* bus, AddrMode mode){
     return 4;
 
   } else if(mode == absoluteX){
-    if(pageFlag == 1){
+    if(bus->cpu->pageFlag == 1){
       return 5;
 
     } else {
@@ -1517,13 +1514,13 @@ int ora(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
   }
@@ -1561,7 +1558,6 @@ int pla(CPU* cpu, Bus* bus){
   readBus(bus, 0x1000 | cpu->sp);
 
   cpu->a = popStack(cpu, bus);
-  //printf("cpu->pf in pla: %d \n", cpu->pf);
   checkNFlag(cpu, cpu->a);
   checkZFlag(cpu, cpu->a);
   cpu->pc++;
@@ -1573,10 +1569,6 @@ int rol(CPU* cpu, Bus* bus, AddrMode mode){
   uint8_t value = addressModeDecode(cpu, bus, mode);
   uint8_t prevValue = value;
 
-  // sets the C Flag as bit 7 of the input 
-
-  // dummy read
-  readBus(bus, cpu->pc);
 
   value = value << 1;
 
@@ -1700,6 +1692,9 @@ int rts(CPU* cpu, Bus* bus){
 
   cpu->pc = (uint16_t) popStack(cpu, bus);
   cpu->pc += (uint16_t) popStack(cpu, bus) << 8;
+
+  // dummy read
+  readBus(bus, cpu->pc);
   cpu->pc++;
   return 6;
 }
@@ -1763,13 +1758,13 @@ int sbc(CPU* cpu, Bus* bus, AddrMode mode){
     case absolute:
       return 4;
     case absoluteX:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case absoluteY:
-      return pageFlag == 1 ? 5 : 4;
+      return bus->cpu->pageFlag == 1 ? 5 : 4;
     case indirectX:
       return 6;
     case indirectY:
-      return pageFlag == 1 ? 6 : 5;
+      return bus->cpu->pageFlag == 1 ? 6 : 5;
     default:
       return -1;
 
@@ -2039,13 +2034,13 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
       newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->x) & 0xff00;
       if(currPage == newPage){
-        pageFlag = 0;
+        bus->cpu->pageFlag = 0;
       } else {
 
         // dummy read
         readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
 
-        pageFlag = 1;
+        bus->cpu->pageFlag = 1;
 
 
       }
@@ -2059,11 +2054,11 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
       newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->y) & 0xff00;
       if(currPage == newPage){
-        pageFlag = 0;
+        bus->cpu->pageFlag = 0;
       } else {
         // dummy read
         readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
-        pageFlag = 1;
+        bus->cpu->pageFlag = 1;
 
       } 
    
@@ -2101,11 +2096,11 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       currPage = ((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) & 0xff00;
       newPage = (((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) + cpu->y) & 0xff00;
       if(currPage == newPage){
-        pageFlag = 0;
+        bus->cpu->pageFlag = 0;
       } else {
         // dummy read
         readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) + (bus->cpu->addressL + cpu->y)));
-        pageFlag = 1;
+        bus->cpu->pageFlag = 1;
         
       }
 

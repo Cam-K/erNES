@@ -387,7 +387,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
               }
 
               // shift register contents gets copied into internal register
-              if((addr >= 0x8000) & (addr <= 0x9fff)){
+              if((addr >= 0x8000) && (addr <= 0x9fff)){
                 bus->mmc1.control.reg = bus->mmc1.shiftRegister.reg;
                 if((bus->mmc1.control.reg & 0b11) == 2){
                   bus->ppu->mirroring = 1;
@@ -398,11 +398,11 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
                 } else if((bus->mmc1.control.reg & 0b11) == 1){
                   bus->ppu->mirroring = 3;
                 }
-              } else if((addr >= 0xa000) & (addr <= 0xbfff)){
+              } else if((addr >= 0xa000) && (addr <= 0xbfff)){
                 bus->mmc1.chrBank0.reg = bus->mmc1.shiftRegister.reg;
-              } else if((addr >= 0xc000) & (addr <= 0xdfff)){
+              } else if((addr >= 0xc000) && (addr <= 0xdfff)){
                 bus->mmc1.chrBank1.reg = bus->mmc1.shiftRegister.reg;
-              } else if((addr >= 0xe000) & (addr <= 0xffff)){
+              } else if(addr >= 0xe000){
                 bus->mmc1.prgBank.reg = bus->mmc1.shiftRegister.reg;
               }
 
@@ -724,12 +724,14 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           // - 1 because you want to get the very last block of memory
           return bus->memArr[bus->numOfBlocks - 1].contents[addr - 0xc000];
         }
+        break;
       case 3:
         if(addr >= 0x8000 && addr <= 0xbfff){
           return bus->memArr[1].contents[addr - 0x8000];
         } else if(addr >= 0xc000){
           return bus->memArr[2].contents[addr - 0xc000];
         }
+        break;
       case 7:
         if(addr >= 0x8000){
 
@@ -826,7 +828,7 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
            }
         }
         
-    
+        break;
       case 2:
         return ppu->ppubus->memArr[0].contents[addr];
       case 3:

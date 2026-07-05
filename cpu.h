@@ -74,6 +74,9 @@ typedef struct _CPU {
   int nmiInterruptFlag;
   int irqInterruptFlag;
 
+  // flag that gets raised when the cpu crosses page boundaries
+  int pageFlag;
+
 
 }CPU;
 
@@ -84,11 +87,6 @@ void writeBus(Bus*, uint16_t, uint8_t);
 
 int execute(CPU*, Bus*, int);
 
-// ** Global Variables **
-//
-// pageFlag is used in addressModeDecode to denote whether
-// the resolved address crossing page boundaries
-extern int pageFlag;
 
 //void adc(CPU*, Bus*, uint16_t, uint8_t, addrMode);
 //void and(CPU*, Bus*, uint16_t, uint8_t, addrMode); 

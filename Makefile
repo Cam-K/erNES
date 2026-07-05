@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = `sdl2-config --cflags` -I. -g -O1 
+CFLAGS = `sdl2-config --cflags` -I. -g -O1 -Wall -Wextra
 LDFLAGS = `sdl2-config --libs` -lcjson -lm 
 TARGET = ernes
 BUILDDIR = ./build
