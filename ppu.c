@@ -154,9 +154,21 @@ void dmaTransfer(Bus* bus){
 
   for(int i = 0; i <= 0xff; ++i){
     addr = (((uint16_t)bus->ppu->oamdma) << 8) | i;
+
+    // cycles the rest of the system 255 times
     bus->ppu->oam[i] = readBus(bus, addr);
   }
+  // cycles to perform so that a total of 513 or 514 cycles are used on the
+  // dma transfer.
   
+  for(int i = 0; i < 258; ++i){
+    readBus(bus, addr);
+  }
+  if(bus->cpu->cycles % 2 != 0){
+    readBus(bus, addr);
+  }
+  
+
 }
 
 // populatePalette()
@@ -336,7 +348,6 @@ void drawFrameBuffer(Bus* bus){
 
   SDL_RenderClear(bus->ppu->renderer);
   SDL_LockTexture(bus->ppu->texture, NULL, (void**)&pixels, &pitch);
- 
 
   for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
     for(int j = 0; j < FRAMEBUFFER_WIDTH; ++j){
@@ -1061,7 +1072,7 @@ void spriteEvaluationAndProcess(PPU* ppu){
           ppu->spriteShifters[ppu->spriteLatchCounter >> 2].xCoordinate = ppu->spriteLatch.xCoordinate;
           ppu->spriteShifters[ppu->spriteLatchCounter >> 2].bitPlaneLo = ppu->spriteLatch.bitPlaneLo;
           ppu->spriteShifters[ppu->spriteLatchCounter >> 2].bitPlaneHi = ppu->spriteLatch.bitPlaneHi;
-          ppu->spriteShifters[ppu->spriteLatchCounter >> 2].attributeData = ppu->spriteLatch.attributeData & 0b11;
+          ppu->spriteShifters[ppu->spriteLatchCounter >> 2].attributeData = (ppu->spriteLatch.attributeData & 0b11);
           ppu->spriteShifters[ppu->spriteLatchCounter >> 2].bgPriorityFlag = ((ppu->spriteLatch.attributeData & 0b100000) >> 5);
           
 
@@ -1174,7 +1185,9 @@ void tickPpu(Bus* bus){
  
 
 
-  
+  if(bus->ppu->dotx == 257){
+    bus->ppu->spriteLatchCounter = 0;
+  }
   // ****** Sprite Process ******
   // (this is all done inpreparation to output for the next scanline)
   if(getBit(bus->ppu->mask, 4) != 0){

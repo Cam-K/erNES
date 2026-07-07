@@ -203,6 +203,7 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
   tickPpu(bus);
   tickPpu(bus);
   tickPpu(bus);
+  bus->cpu->cycles++;
 
   if(addr <= 0x07ff){
     bus->memArr[0].contents[addr] = val;
@@ -513,6 +514,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
   tickPpu(bus);
   tickPpu(bus);
   tickPpu(bus);
+  bus->cpu->cycles++;
 
 
   if(bus->numOfBlocks == 0){

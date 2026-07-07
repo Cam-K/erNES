@@ -891,7 +891,7 @@ void nesMainLoop(Bus* bus){
       while(1){
           checkForInterrupts(bus);
           fetchOpcode(bus);
-          bus->cpu->cycles += decodeAndExecute(bus->cpu, bus);
+          decodeAndExecute(bus->cpu, bus);
       }
 }
 
