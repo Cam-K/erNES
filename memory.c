@@ -150,21 +150,10 @@ void initBus(Bus* bus, uint16_t banks){
 
 #if NESEMU == 0
 void writeBus(Bus* bus, uint16_t addr, uint8_t val){
+  bus->cpu->writeCounter++;
   if(bus->numOfBlocks == 0){
     return;
   }
-  /*
-  if(addr >= 0x0000 && addr <= bus->memArr[0].size){
-    if(bus->memArr[0].type == Ram){
-      bus->memArr[0].contents[addr] = val;
-    }
-  } else {
-    if(bus->memArr[1].type == Ram){
-      bus->memArr[1].contents[addr + bus->memArr[0].size - 1] = val;
-    }
-  }
-
-  */
   uint16_t index;
   for(int i = 0; i < bus->numOfBlocks; ++i){
     if(bus->memArr[i].startAddr <= addr && bus->memArr[i].endAddr >= addr){
@@ -182,6 +171,26 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
 
 }
 
+void writeBusWithoutCounter(Bus* bus, uint16_t addr, uint8_t val){
+  if(bus->numOfBlocks == 0){
+    return;
+  }
+  uint16_t index;
+  for(int i = 0; i < bus->numOfBlocks; ++i){
+    if(bus->memArr[i].startAddr <= addr && bus->memArr[i].endAddr >= addr){
+
+      if(bus->memArr[i].type == Rom)
+        break;
+
+      bus->memArr[i].contents[addr] = val;
+      //printf("Writing to %d with %d \n", addr, val);
+      break;
+    } 
+  }
+
+
+
+}
 #elif NESEMU == 1
 
 // hard-coded for nes memory map
@@ -458,23 +467,35 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
 #if NESEMU == 0
 
 uint8_t readBus(Bus* bus, uint16_t addr){
+  bus->cpu->readCounter++; 
   if(bus->numOfBlocks == 0){
     return 0;
   }
 
   for(int i = 0; i < bus->numOfBlocks; ++i){
     if(bus->memArr[i].startAddr <= addr && bus->memArr[i].endAddr >= addr){
-      //printf("Bus memory block %d being read \n", i);
       return bus->memArr[i].contents[addr - bus->memArr[i].startAddr];
     } 
   }
   return 0;
-/*  if(addr >= 0x0000 && addr <= bus->memArr[0].size){
-    return bus->memArr[0].contents[addr];
-  } else {
-    return bus->memArr[1].contents[addr + bus->memArr[0].size - 1];
+
+
+}
+
+// function that doesn't increment the read counter
+uint8_t readBusWithoutCounter(Bus* bus, uint16_t addr){
+
+  if(bus->numOfBlocks == 0){
+    return 0;
   }
-  */
+
+  for(int i = 0; i < bus->numOfBlocks; ++i){
+    if(bus->memArr[i].startAddr <= addr && bus->memArr[i].endAddr >= addr){
+      return bus->memArr[i].contents[addr - bus->memArr[i].startAddr];
+    } 
+  }
+  return 0;
+
 
 }
 

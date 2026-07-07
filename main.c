@@ -908,8 +908,7 @@ void dumpFileToMemory(uint8_t* fileBuffer, Mem* mem, int offset, int size){
 }
 
 
-
-
+#if NESEMU == 0
 // helper function to populate the processorState struct
 // can send a
 void populateProcStructWithJson(cJSON* json, processorState* procStat, uint8_t opcode){
@@ -1033,7 +1032,7 @@ int checkMemWithJson(Bus* bus, cJSON* json){
   for(int i = 0; i < cJSON_GetArraySize(json); ++i){
     addr = cJSON_GetArrayItem(cJSON_GetArrayItem(json,i),0)->valueint;
     val = cJSON_GetArrayItem(cJSON_GetArrayItem(json,i),1)->valueint;
-    if(readBus(bus, addr) == val){
+    if(readBusWithoutCounter(bus, addr) == val){
       continue;
     } else {
       printf("Incorrect memory value at %d with %d \n", addr, val);
@@ -1093,6 +1092,10 @@ void jsonTesterBatch(char* fileDirectory){
 
 
     dir = opendir(fileDirectory);
+    if(dir == NULL){
+      printf("Error in opening directory \n");
+      exit(1);
+    }
     while((entry = readdir(dir)) != NULL){
       if(strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0){
         strcpy(currFile, fileDirectory);
@@ -1154,7 +1157,11 @@ int jsonTester(char* file, Bus* bus, processorState* state){
   cJSON* final;
   cJSON* initRam;
   cJSON* finalRam;
+  cJSON* cycles;
   processorState finalStruct;
+
+  int readCounter;
+  int writeCounter;
 
   int errorCode = 0;
   char input[MAX_STR];
@@ -1166,6 +1173,20 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     name = cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(jsonData,i), "name");
     initial = cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(jsonData,i), "initial");
     final = cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(jsonData,i), "final");
+    cycles = cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(jsonData, i), "cycles");
+    
+    readCounter = 0;
+    writeCounter = 0;
+    for(int j = 0; j < cJSON_GetArraySize(cycles); ++j){
+      if(strcmp(cJSON_Print(cJSON_GetArrayItem(cJSON_GetArrayItem(cycles, j), 2)), "\"read\"") == 0){
+        readCounter++;
+      } else if(strcmp(cJSON_Print(cJSON_GetArrayItem(cJSON_GetArrayItem(cycles, j), 2)), "\"write\"") == 0){
+        writeCounter++;
+      }
+    }
+   
+
+
     initRam = cJSON_GetObjectItemCaseSensitive(initial, "ram");
     finalRam = cJSON_GetObjectItemCaseSensitive(final, "ram");
 
@@ -1183,7 +1204,6 @@ int jsonTester(char* file, Bus* bus, processorState* state){
 
 
     // start cpu and run test
-
     fetchOpcode(bus);
     //if(SUPPRESSOUTPUT == 0)
     //printf("Executing Oppcode 0x%x at %d\n", oppCode, bus->cpu->pc);
@@ -1194,7 +1214,7 @@ int jsonTester(char* file, Bus* bus, processorState* state){
     //  printCpuWithJson(bus->cpu, finalStruct, errorCode);
 
 
-    if(checkProcState(bus->cpu, final) == 0 && checkMemWithJson(bus, finalRam) == 0){
+    if(checkProcState(bus->cpu, final) == 0 && checkMemWithJson(bus, finalRam) == 0 && (bus->cpu->readCounter == readCounter) && (bus->cpu->writeCounter == writeCounter)){
       //if(SUPPRESSOUTPUT == 0)
        // printf("Passed! \n \n");
       
@@ -1202,6 +1222,8 @@ int jsonTester(char* file, Bus* bus, processorState* state){
         printf("Failed! \n Passed %d tests! \n", i);
         printf("Test Name %s \n", name->valuestring);
         printCpuWithJson(bus->cpu, finalStruct, errorCode);
+        printf("reads: %d - %d \n", bus->cpu->readCounter, readCounter);
+        printf("writes: %d - %d \n", bus->cpu->writeCounter, writeCounter);
       if(state != NULL)
         copyProcessorState(state, &finalStruct);
       return 0;
@@ -1224,6 +1246,8 @@ int jsonTester(char* file, Bus* bus, processorState* state){
 
 }
 
+#endif
+
 
 void printHelp(){
 
@@ -1239,7 +1263,7 @@ void printHelp(){
   puts("\t -n [FILE] \t starts in NES mode with INES rom file \n");
   puts("\t -d [DIR] \t starts json tester in batch mode with a directory of json tests \n");
     puts("\t -s [RESOLUTION SCALING INTEGER] \t integer amount to scale the resolution by (default: 1) \n");
-  puts("\t NOTE: To use -j, -i, or -d flags, make sure to set the NESEMU macro to 0 in general.h and recompile, otherwise keep it set to 1 to compile the NES emulator code");
+  puts("\t NOTE: To use -j, -i, or -d flags, make sure to set the NESEMU macro to 0 in general.h and recompile, otherwise keep it set to 1 to compile the NES emulator code and to use the other arguments");
 
 
   exit(0);

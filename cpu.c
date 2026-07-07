@@ -48,6 +48,7 @@ void reset(CPU* cpu, Bus* bus){
     cpu->haltFlag = 0;
     cpu->addressH = 0;
     cpu->addressL = 0;
+    cpu->indexedReadInstructionFlag = 0;
 
 }
 
@@ -148,6 +149,16 @@ int irq(CPU* cpu, Bus* bus){
 
 // fetches opcode of the current program counter
 void fetchOpcode(Bus* bus){
+ 
+
+  #if NESEMU == 0
+    // reset read/write counter here to see how many clock cycles
+    // an instruction takes to execute. (used for json testing purposes)
+    bus->cpu->readCounter = 0;
+    bus->cpu->writeCounter = 0;
+
+  #endif
+
   bus->cpu->opcode = readBus(bus, bus->cpu->pc);
 
 }
@@ -196,6 +207,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bpl(cpu, bus);
       break;
     case 0x11:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = ora(cpu, bus, indirectY);
       break;
     case 0x14:
@@ -211,15 +223,18 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = clc(bus);
       break;
     case 0x19:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = ora(cpu, bus, absoluteY);
       break;
     case 0x1a:
       cyclesCompleted = nop(bus, implied);
       break;
     case 0x1d:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = ora(cpu, bus, absoluteX);
       break;
     case 0x1e:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = asl(cpu, bus, absoluteX);
       break;
     case 0x20:
@@ -259,6 +274,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bmi(cpu, bus);
       break;
     case 0x31:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = and(cpu, bus, indirectY);
       break;
     case 0x34:
@@ -274,12 +290,15 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = sec(cpu, bus);
       break;
     case 0x39:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = and(cpu, bus, absoluteY);
       break;
     case 0x3d:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = and(cpu, bus, absoluteX);
       break;
     case 0x3e:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = rol(cpu, bus, absoluteX);
       break; 
     case 0x40:
@@ -316,6 +335,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bvc(cpu, bus);
       break;
     case 0x51:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = eor(cpu, bus, indirectY);
       break;
     case 0x55:
@@ -328,12 +348,15 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = cli(bus);
       break;
     case 0x59:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = eor(cpu, bus, absoluteY);
       break;
     case 0x5d:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = eor(cpu, bus, absoluteX);
       break;
     case 0x5e:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = lsr(cpu, bus, absoluteX);
       break;
     case 0x60:
@@ -370,6 +393,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bvs(cpu, bus);
       break;
     case 0x71:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = adc(cpu, bus, indirectY);
       break;
     case 0x75:
@@ -382,12 +406,15 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = sei(cpu, bus);
       break;
     case 0x79:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = adc(cpu, bus, absoluteY);
       break;
     case 0x7d:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = adc(cpu, bus, absoluteX);
       break;
     case 0x7e:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = ror(cpu, bus, absoluteX);
       break;
     case 0x81:
@@ -421,6 +448,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bcc(cpu, bus);
       break;
     case 0x91:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sta(cpu, bus, indirectY);
       break;
     case 0x94:
@@ -436,12 +464,14 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = tya(bus);
       break;
     case 0x99:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sta(cpu, bus, absoluteY);
       break;
     case 0x9a:
       cyclesCompleted = txs(bus);
       break;
     case 0x9d:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sta(cpu, bus, absoluteX);
       break;
     case 0xa0:
@@ -484,6 +514,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bcs(cpu, bus);
       break;
     case 0xb1:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = lda(cpu, bus, indirectY);
       break;
     case 0xb4:
@@ -499,18 +530,22 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = clv(bus);
       break;
     case 0xb9:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = lda(cpu, bus, absoluteY);
       break;
     case 0xba:
       cyclesCompleted = tsx(bus);
       break;
     case 0xbc:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = ldy(cpu, bus, absoluteX);
       break;
     case 0xbd:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = lda(cpu, bus, absoluteX);
       break;
     case 0xbe:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = ldx(cpu, bus, absoluteY);
       break;
     case 0xc0:
@@ -550,6 +585,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = bne(cpu, bus);
       break;
     case 0xd1:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = cmp(cpu, bus, indirectY);
       break;
     case 0xd5:
@@ -562,12 +598,15 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = cld(bus);
       break;
     case 0xd9:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = cmp(cpu, bus, absoluteY);
       break;
     case 0xdd:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = cmp(cpu, bus, absoluteX);
       break;
     case 0xde:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = dec(cpu, bus, absoluteX);
       break;
     case 0xe0:
@@ -607,6 +646,7 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = beq(cpu, bus);
       break;
     case 0xf1:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sbc(cpu, bus, indirectY);
       break;
     case 0xf5:
@@ -621,12 +661,15 @@ int decodeAndExecute(CPU* cpu, Bus* bus){
       cyclesCompleted = sed(bus);
       break;
     case 0xf9:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sbc(cpu, bus, absoluteY);
       break;
     case 0xfd:
+      bus->cpu->indexedReadInstructionFlag = 1;
       cyclesCompleted = sbc(cpu, bus, absoluteX);
       break;
     case 0xfe:
+      bus->cpu->indexedReadModifyWriteInstructionFlag = 1;
       cyclesCompleted = inc(cpu, bus, absoluteX);
       break;
     default:
@@ -750,8 +793,6 @@ int asl(CPU* cpu, Bus* bus, AddrMode mode) {
     cpu->pc = cpu->pc + 1;
     switch(mode){
       case accumulator:
-        // dummy read
-        readBus(bus, cpu->pc);
         return 2;
       case zeroPage:
         // dummy write
@@ -780,65 +821,63 @@ int bcc(CPU* cpu, Bus* bus){
   int8_t offset;
   uint16_t page;
   offset = addressModeDecode(cpu, bus, relative);
-  page = cpu->pc & 0xff00;
-  if(!getBit(cpu->pf, C)){
+  if(getBit(cpu->pf, C) == 0){
+    cpu->pc++;
+
+    // page is calculated after the pc is incremented due to edge case with
+    // the cpu incrementing the pc before checking to see if it crossed a page
+    // or not.
+    page = cpu->pc & 0xff00;
+
     cpu->pc += offset;
-  } 
-  // dummy read
-  readBus(bus, cpu->pc);
-  cpu->pc++;
-  if(page == (cpu->pc & 0xff00)){
     readBus(bus, cpu->pc);
-    return 3;
-  } else if (page != (cpu->pc & 0xff00)) {
-    readBus(bus, cpu->pc);
-    readBus(bus, cpu->pc);
-    return 4;
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+    } 
+  } else {
+    cpu->pc++;
   }
 
-  return 2;
 }
 
 
 int bcs(CPU* cpu, Bus* bus){
   int8_t offset;
-  uint16_t page = cpu->pc & 0xff00;
+  uint16_t page;
 
   offset = addressModeDecode(cpu, bus, relative);
   if(getBit(cpu->pf, C)){
-    cpu->pc += offset;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
-  cpu->pc++;
-  if(page == (cpu->pc & 0xff00)){
-    return 3;
-  } else if (page != (cpu->pc & 0xff00)) {
-    readBus(bus, cpu->pc);
-    return 4;
-  }
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
 
-  return 2;
+    cpu->pc += offset;
+    readBus(bus, cpu->pc);
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+    } 
+  } else {
+    cpu->pc++;
+  }
+ 
 }
 
 int beq(CPU* cpu, Bus* bus){
   int8_t offset;
-  uint16_t page = cpu->pc & 0xff00;
+  uint16_t page;
 
   offset = addressModeDecode(cpu, bus, relative);
   if(getBit(cpu->pf, Z) != 0){
-    cpu->pc += offset;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
-  cpu->pc++;
-  if(page == (cpu->pc & 0xff00)){
-    return 3;
-  } else if (page != (cpu->pc & 0xff00)) {
-    return 4;
-  }
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
 
-  return 2;
+    cpu->pc += offset;
+    readBus(bus, cpu->pc);
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+    } 
+  } else {
+    cpu->pc++;
+  }
 
 }
 
@@ -879,20 +918,22 @@ int bmi(CPU* cpu, Bus* bus){
   int8_t offset;
   int cycles = 2;
 
-  uint16_t page = cpu->pc & 0xff00;
+  uint16_t page;
   offset = addressModeDecode(cpu, bus, relative);
   if(getBit(cpu->pf, N) != 0){
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
+
     cpu->pc += offset;
-    cycles += 1;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
-  if(page != (cpu->pc & 0xff00)){
-    // dummy read
     readBus(bus, cpu->pc);
-    cycles += 2;
+    cycles++;
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+      cycles++;
+    } 
+  } else {
+    cpu->pc++;
   }
-  cpu->pc++;
   return cycles;
 
 }
@@ -905,16 +946,17 @@ int bne(CPU* cpu, Bus* bus){
   offset = addressModeDecode(cpu, bus, relative);
 
   if(getBit(cpu->pf, Z) == 0){
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
+
     cpu->pc += offset;
-    cycles = 3;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
-  if(page == (cpu->pc & 0xff00)){
     readBus(bus, cpu->pc);
-    cycles += 2;
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+    } 
+  } else {
+    cpu->pc++;
   }
-  cpu->pc++;
   return cycles;
 
 
@@ -927,19 +969,19 @@ int bpl(CPU* cpu, Bus* bus){
   int cycles = 2;
   offset = (int8_t)addressModeDecode(cpu, bus, relative);
   if(!getBit(cpu->pf, N)){
-    cpu->pc += offset;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
-  readBus(bus, cpu->pc);
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
 
-  if(getBit(cpu->pf, N) != 0){
-    cycles += 1;
+    cpu->pc += offset;
+    cycles++;
+    readBus(bus, cpu->pc);
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+      cycles++;
+    } 
+  } else {
+    cpu->pc++;
   }
-  if(page == (cpu->pc & 0xff00)){
-    cycles += 2;
-  }
-  cpu->pc++;
   return cycles;
 
 }
@@ -995,20 +1037,19 @@ int bvc(CPU* cpu, Bus* bus){
   offset = addressModeDecode(cpu, bus, relative);
   
   if(!getBit(cpu->pf, V)){
-    cpu->pc += offset;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
+   cpu->pc++;
+    page = cpu->pc & 0xff00;
 
-  if(!getBit(cpu->pf, V)){
-    cycles += 1;
+    cpu->pc += offset;
+    cycles++;
+    readBus(bus, cpu->pc);
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+      cycles++;
+    } 
+  } else {
+    cpu->pc++;
   }
-  if(page == (cpu->pc & 0xff00)){
-    // dummy read
-    readBus(bus, bus->cpu->pc);
-    cycles += 2;
-  }
-  cpu->pc++;
   return cycles;
 }
 
@@ -1019,19 +1060,20 @@ int bvs(CPU* cpu, Bus* bus){
   offset = addressModeDecode(cpu, bus, relative);
 
   if(getBit(cpu->pf, V)){
-    cpu->pc += offset;
-  }
-  // dummy read
-  readBus(bus, cpu->pc);
+    cpu->pc++;
+    page = cpu->pc & 0xff00;
 
-  if(getBit(cpu->pf, V)){
-    cycles += 1;
-  }
-  if(page == (cpu->pc & 0xff00)){
+    cpu->pc += offset;
+    cycles++;
     readBus(bus, cpu->pc);
-    cycles += 2;
+    if (page != (cpu->pc & 0xff00)) {
+      readBus(bus, cpu->pc);
+      cycles++;
+    } 
+  } else {
+    cpu->pc++;
   }
-  cpu->pc++;
+
   return cycles;
 }
 
@@ -1180,7 +1222,7 @@ int dec(CPU* cpu, Bus* bus, AddrMode mode){
   cpu->pc++;
   switch(mode){
     case zeroPage:
-      readBus(bus, cpu->pc);
+      writeBus(bus, bus->cpu->addressL, value);
       return 5;
     case zeroPageX:
       writeBus(bus, bus->cpu->addressL, value);
@@ -1261,15 +1303,14 @@ int inc(CPU* cpu, Bus* bus, AddrMode mode){
       writeBus(bus, bus->cpu->addressL, value);
       return 5;
     case zeroPageX:
-      readBus(bus, cpu->pc);
+      writeBus(bus, bus->cpu->addressL, value);
       return 6;
     case absolute:
       writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL, value);
 
       return 6;
     case absoluteX:
-      readBus(bus, cpu->pc);
-      readBus(bus, cpu->pc);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x, value);
       return 7;
     default:
       return -1;
@@ -1634,6 +1675,8 @@ int ror(CPU* cpu, Bus* bus, AddrMode mode){
   addressModeDecodeWrite(value, cpu, bus, mode);
   cpu->pc++;
   switch(mode){
+    case implied:
+      return 2;
     case accumulator:
       return 2;
     case zeroPage:
@@ -1643,7 +1686,7 @@ int ror(CPU* cpu, Bus* bus, AddrMode mode){
       writeBus(bus, bus->cpu->addressL, value);
       return 6;
     case absolute:
-      readBus(bus, cpu->pc);
+      writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL, value);
       return 6;
     case absoluteX:
       writeBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x, value);
@@ -1657,10 +1700,7 @@ int ror(CPU* cpu, Bus* bus, AddrMode mode){
 
 int rti(CPU* cpu, Bus* bus){
 
-
-
-  // dummy cpu reads
-  readBus(bus, cpu->pc);
+  // dummy reads
   readBus(bus, 0x0100 + cpu->sp);
 
 
@@ -1820,6 +1860,8 @@ int sta(CPU* cpu, Bus* bus, AddrMode mode){
       break;
     case zeroPageX:
       bus->cpu->addressL = readBus(bus, ++cpu->pc) + cpu->x;
+      // dummy read
+      readBus(bus, bus->cpu->addressL);
       break;
 
     default:
@@ -2016,6 +2058,7 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
     case immediate:
       return readBus(bus, ++cpu->pc);
     case accumulator:
+      readBus(bus, cpu->pc);
       return cpu->a;
     case relative:
 
@@ -2033,17 +2076,22 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       bus->cpu->addressH = readBus(bus, ++cpu->pc); 
       currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
       newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->x) & 0xff00;
-      if(currPage == newPage){
-        bus->cpu->pageFlag = 0;
-      } else {
+      if(bus->cpu->indexedReadInstructionFlag == 1){
+        if(currPage == newPage){
+          bus->cpu->pageFlag = 0;
+        } else {
+          // dummy read
+          readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+          bus->cpu->pageFlag = 1;
 
-        // dummy read
+        }
+        bus->cpu->indexedReadInstructionFlag = 0; 
+      } else if(bus->cpu->indexedReadModifyWriteInstructionFlag == 1){
         readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
-
-        bus->cpu->pageFlag = 1;
-
+        bus->cpu->indexedReadModifyWriteInstructionFlag = 0; 
 
       }
+  
       
       return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
 
@@ -2053,21 +2101,27 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       bus->cpu->addressH = readBus(bus, ++cpu->pc); 
       currPage = (((uint16_t)(bus->cpu->addressH) << 8) | bus->cpu->addressL) & 0xff00;
       newPage = ((((uint16_t)(bus->cpu->addressH)  << 8) | bus->cpu->addressL) + cpu->y) & 0xff00;
-      if(currPage == newPage){
-        bus->cpu->pageFlag = 0;
-      } else {
-        // dummy read
-        readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
-        bus->cpu->pageFlag = 1;
+      if(bus->cpu->indexedReadInstructionFlag == 1){
+        if(currPage == newPage){
+          bus->cpu->pageFlag = 0;
+        } else {
+          // dummy read
+          readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
+          bus->cpu->pageFlag = 1;
 
-      } 
+        } 
+        bus->cpu->indexedReadInstructionFlag = 0; 
+      } else if(bus->cpu->indexedReadModifyWriteInstructionFlag == 1){
+        readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+        bus->cpu->indexedReadModifyWriteInstructionFlag = 0; 
+
+      }
    
       return readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
 
 
     case zeroPage:
       bus->cpu->addressL = readBus(bus, ++cpu->pc);
-
       return readBus(bus, bus->cpu->addressL);
 
     case zeroPageX:
@@ -2095,13 +2149,20 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
       bus->cpu->addressH = readBus(bus, zeroPageAddr += 1);
       currPage = ((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) & 0xff00;
       newPage = (((((uint16_t) bus->cpu->addressH) << 8) + bus->cpu->addressL) + cpu->y) & 0xff00;
-      if(currPage == newPage){
-        bus->cpu->pageFlag = 0;
-      } else {
-        // dummy read
-        readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) + (bus->cpu->addressL + cpu->y)));
-        bus->cpu->pageFlag = 1;
-        
+      if(bus->cpu->indexedReadInstructionFlag == 1){
+        if(currPage == newPage){
+          bus->cpu->pageFlag = 0;
+        } else {
+          // dummy read
+          readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) + (bus->cpu->addressL + cpu->y)));
+          bus->cpu->pageFlag = 1;
+          
+        }
+        bus->cpu->indexedReadInstructionFlag = 0; 
+      } else if(bus->cpu->indexedReadModifyWriteInstructionFlag == 1){
+        readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+        bus->cpu->indexedReadModifyWriteInstructionFlag = 0; 
+
       }
 
       
@@ -2135,6 +2196,7 @@ void checkNFlag(CPU* cpu, uint8_t val){
     cpu->pf = clearBit(cpu->pf, N);
   }
 }
+
 
 
 

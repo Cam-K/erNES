@@ -162,6 +162,8 @@ void clearMem(Mem*);
 
 uint8_t readBus(Bus*, uint16_t);
 void writeBus(Bus*, uint16_t, uint8_t);
+uint8_t readBusWithoutCounter(Bus*, uint16_t);
+void writeBusWithoutCounter(Bus*, uint16_t, uint8_t);
 void mapMemory(Bus*, uint16_t, uint16_t);
 
 void initMmc1(MMC1*);

@@ -44,19 +44,19 @@ typedef enum {immediate, accumulator, absolute, absoluteX, absoluteY, absoluteIn
 
 
 typedef struct _CPU {
+
+  // processor registers
   uint8_t a;
   uint8_t x; 
   uint8_t y; 
-
-
   uint8_t sp; 
-  uint16_t pc; 
-  uint16_t addrBus;
-  uint8_t dataBus;
+  uint16_t pc;
+  uint8_t pf; 
+
+
+
   int cycles;
 
-  // processor flags
-  uint8_t pf; 
 
   // internal storage
   uint8_t opcode;
@@ -76,6 +76,20 @@ typedef struct _CPU {
 
   // flag that gets raised when the cpu crosses page boundaries
   int pageFlag;
+
+  // this is a flag that is set when the cpu is executing a read instruction with an
+  // absoluteX, ansoluteY or indirectY addressing mode.
+  int indexedReadInstructionFlag;
+  // this is a flag that is set when the cpu is executing a read/modify/write instruction with an
+  // absoluteX, ansoluteY or indirectY addressing mode.
+  int indexedReadModifyWriteInstructionFlag;
+
+
+  #if NESEMU == 0
+  // counter to track the amount of reads/writes
+  int readCounter;
+  int writeCounter;
+  #endif
 
 
 }CPU;
