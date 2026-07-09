@@ -217,8 +217,7 @@ int main(int argc, char* argv[]){
     if(jsonTester(file, &bus, NULL) == 1){
       printf("Passed all tests! \n");  
     }
-        
-    exit(1);
+    freeAndExit(&bus);
 
   
   }
@@ -1109,6 +1108,8 @@ void jsonTesterBatch(char* fileDirectory){
       }
     }
 
+    freeAndExit(&bus);
+
 
 }
 
@@ -1229,8 +1230,6 @@ int jsonTester(char* file, Bus* bus, processorState* state){
       return 0;
    
     }
-
-
   
   }
 
@@ -1242,6 +1241,7 @@ int jsonTester(char* file, Bus* bus, processorState* state){
    if(state != NULL)
         copyProcessorState(state, &finalStruct);
    
+  cJSON_Delete(jsonData);
   return 1;
 
 }
@@ -1275,12 +1275,12 @@ void freeAndExit(Bus* bus){
 
   printf("Freeing memory and exiting... \n");
 
-  
+  #if NESEMU == 1
   SDL_DestroyTexture(bus->ppu->texture);
   SDL_DestroyRenderer(bus->ppu->renderer);
   SDL_DestroyWindow(bus->ppu->win);
   SDL_Quit();
-
+  #endif
 
   for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
 

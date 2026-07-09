@@ -1185,6 +1185,9 @@ void tickPpu(Bus* bus){
  
 
 
+  // we reset this variable here due to an edge case from some games restarting rendering
+  // after dotx 257 and trying to perform sprite evaluation and this counter
+  // not being reset properly, thus causing memory corruption. 
   if(bus->ppu->dotx == 257){
     bus->ppu->spriteLatchCounter = 0;
   }

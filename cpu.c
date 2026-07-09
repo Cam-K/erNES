@@ -49,6 +49,10 @@ void reset(CPU* cpu, Bus* bus){
     cpu->addressH = 0;
     cpu->addressL = 0;
     cpu->indexedReadInstructionFlag = 0;
+    cpu->indexedReadModifyWriteInstructionFlag = 0;
+    cpu->irqInterruptFlag = 0;
+    cpu->pageFlag = 0;
+    cpu->haltFlag = 0;
 
 }
 

@@ -64,9 +64,6 @@ typedef struct _CPU {
   uint8_t addressH;
   uint8_t operand;
 
-  // used for the calculation of the carry flag
-  uint8_t prevpf;
-
   // causes microprocessor to halt 
   int haltFlag;
   
