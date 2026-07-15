@@ -643,11 +643,6 @@ void startNes(char* romPath, int screenScaling){
         // PRG-RAM gets allocated first ($6000-$7fff)
         
           initMemStruct(bus.memArr + 1, prgRamSize, Ram, TRUE);
-          /*
-          for(int i = 0; i < prgRamSize; ++i){
-            bus.memArr[1].contents[i] = rand() % (255 - 1);
-          }
-          */
        
         
         for(int i = 2; i < numOfPrgRoms + 2; ++i){

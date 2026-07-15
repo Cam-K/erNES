@@ -594,20 +594,21 @@ void fetchAndFillLatches(PPU* ppu, uint16_t tempV){
       #if TICKPPUDEBUGLOG == 1
       printf("\t transferring data into shift registers for nametable tile %x \n", 0x2000 + tempV);
       #endif
-      for(int k = 0; k < 8; ++k){
-        if(getBit(ppu->attritebuteDataLatch , 0) == 1){
-          ppu->attributeData1 = setBit16bit(ppu->attributeData1, k);
-        } else if(getBit(ppu->attritebuteDataLatch, 0) == 0){
-          ppu->attributeData1 = clearBit16bit(ppu->attributeData1, k);
-        }
 
-        if(getBit(ppu->attritebuteDataLatch , 1) == 0b10){
-          ppu->attributeData2 = setBit16bit(ppu->attributeData2, k);
-        } else if(getBit(ppu->attritebuteDataLatch, 1) == 0){
-          ppu->attributeData2 = clearBit16bit(ppu->attributeData2, k);
-        }
-
+      // sets or clears the latched data into the attributedata shift register
+      if(getBit(ppu->attritebuteDataLatch , 0) == 1){
+        ppu->attributeData1 = ppu->attributeData1 | 0x00ff;
+      } else if(getBit(ppu->attritebuteDataLatch, 0) == 0){
+        ppu->attributeData1 = ppu->attributeData1 & 0xff00;
       }
+
+      if(getBit(ppu->attritebuteDataLatch , 1) == 0b10){
+        ppu->attributeData2 = ppu->attributeData2 | 0x00ff;
+      } else if(getBit(ppu->attritebuteDataLatch, 1) == 0){
+        ppu->attributeData2 = ppu->attributeData2 & 0xff00;
+      }
+
+    
       ppu->bitPlane1 = ppu->bitPlane1 | (uint16_t)ppu->bitPlaneLoLatch;
       ppu->bitPlane2 = ppu->bitPlane2 | (uint16_t)ppu->bitPlaneHiLatch;
     }

@@ -681,12 +681,11 @@ uint8_t readBus(Bus* bus, uint16_t addr){
           
           // 32 kb mode
           if(((bus->mmc1.control.reg & 0b1100) == 0) || ((bus->mmc1.control.reg & 0b1100) == 0b0100)){
-            //printf("32kb mode \n");
-
 
             if(addr <= 0xbfff){
               //printf("prgbank %x \n", bus->mmc1.prgBank.reg + 1 + bus->presenceOfPrgRam);
               // + 1 + presenceofPrgRam because we need the offset after the initial RAM and potentially PRG-RAM, if present
+              // the reason why we AND with maskForPrgBank is because we want to mask off the bits depending on whether it's 16 or 32 kb mode
               return bus->memArr[(prgBankTemp.reg & maskForPrgBank) + 1 + bus->presenceOfPrgRam].contents[addr - 0x8000];
             } else if(addr >= 0xc000){
               uint8_t temp;
@@ -697,6 +696,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
 
             }
             // if bit 2 and 3 equals 2
+            // fix first bank at $8000 and switch 16 KB bank at $C000
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1000){
             // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the first fixed bank
             uint8_t suRomMemArrOffset = 0;
@@ -713,18 +713,19 @@ uint8_t readBus(Bus* bus, uint16_t addr){
               // + 2 because this is the offset into memArr, after the initial RAM bank at 0x0000-0x07ff and the first, 16kb fixed bank
               return bus->memArr[((prgBankTemp.reg & maskForPrgBank) + bus->presenceOfPrgRam + 2)].contents[addr - 0xc000]; 
             }
+
             // if bit 2 and bit 3 equals 3
+            // fix last bank at $C000 and switch 16 KB bank at $8000
           } else if ((bus->mmc1.control.reg & 0b1100) == 0b1100){
             // variable used for offsetting the 256kb bank offset into memArr (outer bank) for the last fixed bank
             uint8_t suRomMemArrOffset = 0;
 
             if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
               if((getBit(bus->mmc1.chrBank0.reg, 4) == 0)){
-                //printf("selecting block 1 \n");
                 suRomMemArrOffset = 16;
               } else {
                 suRomMemArrOffset = 0;
-                //printf("selecting block 2 \n");
+      
               }
             } 
            if(addr <= 0xbfff){
@@ -1338,6 +1339,8 @@ void mapPpuMemory(PPUBus* bus, uint16_t index, uint16_t addr){
 
 // findPrgBankMask()
 //   some logic to figure out the mask for the prgbank register in MMC1
+//   and also determines whether the game is an SUROM game and sets prgReg
+//   appropriately.
 uint8_t findPrgBankMask(Bus* bus, MMC1Register* prgReg){
     
   uint8_t maskForPrgBank;
@@ -1351,6 +1354,7 @@ uint8_t findPrgBankMask(Bus* bus, MMC1Register* prgReg){
       // check if it is an SUROM game
       if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
 
+        // low bit is ignored in 32 kb mode
         maskForPrgBank = 0b11110;
         
         // For SUROM Games (Dragon Warrior III and IV)
@@ -1367,6 +1371,7 @@ uint8_t findPrgBankMask(Bus* bus, MMC1Register* prgReg){
       // check for 16kb mode
     } else {
       if((bus->numOfBlocks - (1 + bus->presenceOfPrgRam)) == 32){
+
         maskForPrgBank = 0b11111;
 
         // For SUROM Games (Dragon Warrior III and IV)
