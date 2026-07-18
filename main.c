@@ -156,7 +156,7 @@ int main(int argc, char* argv[]){
   
   // parsing command line arguments
   if(argc > 1){
-    while((opt = getopt(argc, argv, "fjhnisd")) != -1)
+    while((opt = getopt(argc, argv, "fj:hn:is:d:")) != -1)
     {
       switch(opt){
         case 'f':
@@ -165,16 +165,13 @@ int main(int argc, char* argv[]){
         case 'j':
           // Json tester
           jFlag = 1;
-          if(argv[optind] != NULL){
-            strcpy(file, argv[optind]);
-          }
+          strcpy(file, optarg);
+
           break;
         case 'n':
           // starts NES emulator
           nFlag = 1;
-          if(argv[optind] != NULL){
-            strcpy(file, argv[optind]);
-          }
+          strcpy(file, optarg);
           break;
         case 'h':
           // prints help
@@ -187,15 +184,13 @@ int main(int argc, char* argv[]){
           break;
         case 's':
           sFlag = 1;
-          if(argv[optind] != NULL){
-            strcpy(screenScaling, argv[optind]);
-          }
+          strcpy(screenScaling, optarg);
+
           break;
         case 'd':
           dFlag = 1;
-          if(argv[optind] != NULL){
-            strcpy(fileDirectory, argv[optind]);
-          }
+          strcpy(fileDirectory, optarg);
+
           break;
           
       }
