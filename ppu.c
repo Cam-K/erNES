@@ -162,10 +162,14 @@ void dmaTransfer(Bus* bus){
   // dma transfer.
   
   for(int i = 0; i < 258; ++i){
-    readBus(bus, addr);
+    tickPpu(bus);
+    tickPpu(bus);
+    tickPpu(bus);
   }
   if(bus->cpu->cycles % 2 != 0){
-    readBus(bus, addr);
+    tickPpu(bus);
+    tickPpu(bus);
+    tickPpu(bus);
   }
   
 
