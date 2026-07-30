@@ -1832,12 +1832,12 @@ int sta(CPU* cpu, Bus* bus, AddrMode mode){
     case absoluteX:
       bus->cpu->addressL = readBus(bus, ++cpu->pc);
       bus->cpu->addressH = readBus(bus, ++cpu->pc);
-      readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+      readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) | ((uint16_t)bus->cpu->addressL + cpu->x));
       break;
     case absoluteY:
       bus->cpu->addressL = readBus(bus, ++cpu->pc);
       bus->cpu->addressH = readBus(bus, ++cpu->pc);
-      readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->y);
+      readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) | ((uint16_t)bus->cpu->addressL + cpu->y));
       break;
     case zeroPage:
       bus->cpu->addressL = readBus(bus, ++cpu->pc);
@@ -2085,7 +2085,7 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
           bus->cpu->pageFlag = 0;
         } else {
           // dummy read
-          readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) + (uint16_t)bus->cpu->addressL + cpu->x);
+          readBus(bus, (((uint16_t)bus->cpu->addressH) << 8) | (bus->cpu->addressL + cpu->x));
           bus->cpu->pageFlag = 1;
 
         }
@@ -2158,7 +2158,7 @@ uint8_t addressModeDecode(CPU* cpu, Bus* bus, AddrMode mode){
           bus->cpu->pageFlag = 0;
         } else {
           // dummy read
-          readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) + (bus->cpu->addressL + cpu->y)));
+          readBus(bus, ((((uint16_t) bus->cpu->addressH) << 8) | (bus->cpu->addressL + cpu->y)));
           bus->cpu->pageFlag = 1;
           
         }

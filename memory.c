@@ -456,6 +456,12 @@ void writeBus(Bus* bus, uint16_t addr, uint8_t val){
           }
         }
         break;
+      case 66:
+        if(addr >= 0x8000){
+          bus->bankSelect = val & 0b00110011;
+          bus->ppu->bankSelect = bus->bankSelect;
+        }
+        break;
       }
     }
   
@@ -538,7 +544,7 @@ uint8_t readBus(Bus* bus, uint16_t addr){
       case 0x2002:
         temp = bus->ppu->status;
         //printf("Reading status \n");
-        //bus->ppu->status = clearBit(bus->ppu->status, 7);
+        bus->ppu->status = clearBit(bus->ppu->status, 7);
         bus->ppu->wregister = 0;
         return temp;
       case 0x2003:
@@ -758,11 +764,13 @@ uint8_t readBus(Bus* bus, uint16_t addr){
         break;
       case 7:
         if(addr >= 0x8000){
-
-          
           return bus->memArr[bus->bankSelect + 1].contents[addr - 0x8000];
         }
         break;
+      case 66:
+        if(addr >= 0x8000){
+          return bus->memArr[((bus->bankSelect & 0b00110000) >> 4) + 1].contents[addr - 0x8000];
+        }
       
     }
   }
@@ -859,7 +867,8 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
         return ppu->ppubus->memArr[ppu->bankSelect].contents[addr];
       case 7:
         return ppu->ppubus->memArr[0].contents[addr];
-        
+      case 66:
+        return ppu->ppubus->memArr[(ppu->bankSelect & 0b00000011)].contents[addr];
     }
   } else if(addr >= 0x2000 && addr <= 0x2fff){
     // vertical arrangement

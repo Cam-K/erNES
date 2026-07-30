@@ -835,6 +835,50 @@ void startNes(char* romPath, int screenScaling){
       nesMainLoop(&bus);
 
       break;
+    case 66:
+      printf("%d \n", numOfChrRoms);
+      printf("%d \n", numOfPrgRoms);
+      initBus(&bus, numOfPrgRoms + 1);
+      initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
+      for(int i = 1; i < ((numOfPrgRoms / 2) + 1); ++i){
+        initMemStruct(&(bus.memArr[i]), 0x8000, Rom, TRUE);
+      }
+      initPpu(bus.ppu, numOfChrRoms + 2);
+
+      for(int i = 0; i < numOfChrRoms; ++i){
+        initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x2000, Rom, TRUE);
+      }
+
+      // two nametables
+      initMemStruct((bus.ppu->ppubus->memArr + numOfChrRoms), 0x400, Ram, TRUE);
+      initMemStruct((bus.ppu->ppubus->memArr + numOfChrRoms + 1), 0x400, Ram, TRUE);
+
+
+      populatePalette(bus.ppu);
+      
+      for(int i = 1; i < ((numOfPrgRoms / 2) + 1); ++i){
+        for(int j = 0; j < 0x8000; ++j){
+          bus.memArr[i].contents[j] = fgetc(romPtr);
+        }
+      }
+      
+
+      for(int i = 0; i < numOfChrRoms; ++i){
+        for(int j = 0; j < 0x2000; ++j){
+          bus.ppu->ppubus->memArr[i].contents[j] = fgetc(romPtr);
+        }
+
+      }
+
+      reset(bus.cpu, &bus);
+      resetPpu(bus.ppu, 1);
+      resetApu(bus.apu);
+      bus.ppu->mapper = bus.mapper;
+      bus.ppu->frameRendering.screenScaling = screenScaling;
+      bus.ppu->mirroring = mirroring;
+
+      nesMainLoop(&bus);
+
     default:
       printf("mapper is not compatible \nincompatible rom \n");
       exit(0);

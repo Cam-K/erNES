@@ -21,6 +21,7 @@ Currently a work in progress.
 - Mapper 2 (UxROM)
 - Mapper 3 (CNROM)
 - Mapper 7 (AxROM)
+- Mapper 66 (GxROM)
 
 
 ## How to compile on a Linux system

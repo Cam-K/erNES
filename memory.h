@@ -136,7 +136,7 @@ typedef struct _Bus {
   // mapper number
   int mapper;
 
-  // used for UxROM games and AxROM games
+  // used for UxROM games, AxROM games and GxROM games
   uint8_t bankSelect;
 
   // used for SUROM Games

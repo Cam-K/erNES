@@ -165,11 +165,13 @@ void dmaTransfer(Bus* bus){
     tickPpu(bus);
     tickPpu(bus);
     tickPpu(bus);
+    bus->cpu->cycles++;
   }
   if(bus->cpu->cycles % 2 != 0){
     tickPpu(bus);
     tickPpu(bus);
     tickPpu(bus);
+    bus->cpu->cycles++;
   }
   
 
@@ -256,9 +258,9 @@ void populatePalette(PPU* ppu){
 
 
 
-// pollControllers()
-//    polls controllers for SDL
-void pollControllers(Bus* bus){
+// pollKeyboard()
+//    polls keyboard for SDL
+void pollKeyboard(Bus* bus){
 
 
   SDL_Event event;
@@ -365,9 +367,9 @@ void drawFrameBuffer(Bus* bus){
   SDL_RenderPresent(bus->ppu->renderer);
 
 
-  // we poll controllers here because this way we can do it one time exactly 
+  // we poll the keyboard here because this way we can do it one time exactly 
   // on scanline 261 and dot 340 only
-  pollControllers(bus);
+  pollKeyboard(bus);
 
 
   // delay until 16.6667 ms has elasped
@@ -468,8 +470,9 @@ uint8_t spriteOutputProcess(PPU* ppu, uint8_t finalBackgroundPixel, uint8_t* spr
         // that were just found from the sprite shifters. 
         finalSpritePixel = bitsCombined | (ppu->spriteShifters[i].attributeData << 2);
         *spritePriority = ppu->spriteShifters[i].bgPriorityFlag;
-        // there is no break here because despite finding the first bit that is non-zero, we still need
+        // there is no break here because despite finding the first 2-bit value that is non-zero, we still need
         // to iterate through the sprite shifters to shift the shift registers by one, to keep everything in line
+        // (this is done in parseSpriteShifters())
       }
   }
   
@@ -1149,6 +1152,7 @@ void tickPpu(Bus* bus){
 
   }
   // ****** priority mux *******
+  // (selects a two bit value output from the background output and sprite output process)
   if(bus->ppu->scanLine >= 0 && bus->ppu->scanLine <= 239 && bus->ppu->dotx >= 1 && bus->ppu->dotx <= 256){
     
     priorityMux(bus->ppu, finalSpritePixel, finalBackgroundPixel, spritePriority);

@@ -297,7 +297,7 @@ int getEightSixteen(PPU*);
 
 // draws the completed framebuffer to screen in SDL
 void drawFrameBuffer(Bus*);
-void pollControllers(Bus*);
+void pollKeyboard(Bus*);
 void freeAndExit(Bus*);
 
 
