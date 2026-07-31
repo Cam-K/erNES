@@ -48,11 +48,8 @@ void initPpu(PPU* ppu, int banks){
     ppu->ppubus->memArr = calloc(1, sizeof(Mem));
   }
   ppu->ppubus->numOfBlocks = banks;
-  ppu->frameBuffer = malloc(sizeof(uint32_t*) * FRAMEBUFFER_HEIGHT);
+  ppu->frameBuffer = malloc(sizeof(uint32_t) * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH);
   
-  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
-    ppu->frameBuffer[i] = calloc(FRAMEBUFFER_WIDTH, sizeof(uint32_t));
-  } 
 
   
   ppu->ctrl = 0;
@@ -354,14 +351,10 @@ void drawFrameBuffer(Bus* bus){
 
   SDL_RenderClear(bus->ppu->renderer);
   SDL_LockTexture(bus->ppu->texture, NULL, (void**)&pixels, &pitch);
+  
+  memcpy(pixels, bus->ppu->frameBuffer, sizeof(uint32_t) * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH);
 
-  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
-    for(int j = 0; j < FRAMEBUFFER_WIDTH; ++j){
-      pixels[(i * FRAMEBUFFER_WIDTH) + j] = bus->ppu->frameBuffer[i][j];
-
-    }
-  }
-
+  
   SDL_UnlockTexture(bus->ppu->texture);
   SDL_RenderCopy(bus->ppu->renderer, bus->ppu->texture, NULL, NULL);
   SDL_RenderPresent(bus->ppu->renderer);
@@ -379,6 +372,7 @@ void drawFrameBuffer(Bus* bus){
   if(elasped_ms < target_frame_time){
     SDL_Delay((uint32_t)(target_frame_time - elasped_ms));
   }
+
 
 }
 
@@ -527,7 +521,9 @@ void priorityMux(PPU* ppu, uint8_t finalSpritePixel, uint8_t finalBackgroundPixe
         }
 
       }
-      ppu->frameBuffer[ppu->scanLine][ppu->dotx - 1] = ppu->palette[readPpuBus(ppu, 0x3f00 + finalPixel)];
+      // it is (ppu->scanLine * FRAMEBUFFER_WIDTH) + (ppu->dotx - 1) because the scanline multiplied by the framebuffer width will
+      // get us the index into the array which lies upon the the y-component of the screen
+      ppu->frameBuffer[(ppu->scanLine * FRAMEBUFFER_WIDTH) + (ppu->dotx - 1)] = ppu->palette[readPpuBus(ppu, 0x3f00 + finalPixel)];
 
 }
 

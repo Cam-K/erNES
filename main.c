@@ -836,8 +836,6 @@ void startNes(char* romPath, int screenScaling){
 
       break;
     case 66:
-      printf("%d \n", numOfChrRoms);
-      printf("%d \n", numOfPrgRoms);
       initBus(&bus, numOfPrgRoms + 1);
       initMemStruct(&(bus.memArr[0]), 0x0800, Ram, TRUE);
       for(int i = 1; i < ((numOfPrgRoms / 2) + 1); ++i){
@@ -1316,10 +1314,6 @@ void freeAndExit(Bus* bus){
   SDL_Quit();
   #endif
 
-  for(int i = 0; i < FRAMEBUFFER_HEIGHT; ++i){
-
-    free(bus->ppu->frameBuffer[i]);
-  }
 
   free(bus->ppu->frameBuffer);
   free(bus->ppu->oam);

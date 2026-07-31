@@ -211,12 +211,11 @@ typedef struct _PPU {
   
   int frames;
   
-  // scanline buffer gets appended to the framebuffer at the end of each rendering cycle
+  // 
   //
-  // the framebuffer gets parsed to the screen when a complete frame is drawn
+  // the framebuffer gets parsed to the screen when a complete frame is drawn, after an entire frame has been drawn from tickPpu();
   // (stores the 24-bit RGB value in an array)
-  // frameBuffer should be initialized as [WINDOW_HEIGHT][WINDOW_WIDTH]
-  uint32_t** frameBuffer;
+  uint32_t* frameBuffer;
 
   // nes palette to 24-bit RGB color
   // http://www.romdetectives.com/Wiki/index.php?title=NES_Palette
