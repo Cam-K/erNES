@@ -360,7 +360,7 @@ void drawFrameBuffer(Bus* bus){
   SDL_RenderPresent(bus->ppu->renderer);
 
 
-  // we poll the keyboard here because this way we can do it one time exactly 
+  // we poll the keyboard here because this way we can do it one time only 
   // on scanline 261 and dot 340 only
   pollKeyboard(bus);
 
@@ -521,8 +521,8 @@ void priorityMux(PPU* ppu, uint8_t finalSpritePixel, uint8_t finalBackgroundPixe
         }
 
       }
-      // it is (ppu->scanLine * FRAMEBUFFER_WIDTH) + (ppu->dotx - 1) because the scanline multiplied by the framebuffer width will
-      // get us the index into the array which lies upon the the y-component of the screen
+      // it is (ppu->scanLine * FRAMEBUFFER_WIDTH) + (ppu->dotx - 1) because the scanline multiplied by the framebuffer width 
+      // skips an entire row of pixels to get us the y-coordinate.
       ppu->frameBuffer[(ppu->scanLine * FRAMEBUFFER_WIDTH) + (ppu->dotx - 1)] = ppu->palette[readPpuBus(ppu, 0x3f00 + finalPixel)];
 
 }
@@ -1257,7 +1257,7 @@ void tickPpu(Bus* bus){
 
 
 // incrementY()
-// increments Y component of the v register
+//    increments Y component of the v register
 void incrementY(PPU* ppu){
   if(ppu->vregister.vcomp.fineY < 7){
     ppu->vregister.vcomp.fineY++;
@@ -1299,6 +1299,8 @@ void fillTempV(uint16_t *tempV, struct VComponent vcomp){
 
 
 
+// incrementCourseX()
+//    increments the v-register appropriately. 
 void incrementCourseX(PPU* ppu){
     if(ppu->vregister.vcomp.courseX == 31){
       ppu->vregister.vcomp.courseX = 0;
@@ -1315,14 +1317,13 @@ void incrementCourseX(PPU* ppu){
 
 
 // findAndReturnAttributeByte()
-//   finds which quadrant the beam resides in, then returns the appropriate 2-bit attribute data for the corresponding
+//   finds which quadrant the v-register resides in, then returns the appropriate 2-bit attribute data for the corresponding
 //   quadrant
 // inputs
-//   x - x coordinate
-//   y - y coordinate
-//   attributeTableByte - attributeTabledata to select from
+//   tempV - v-register value
+//   attributeTableByte - attribute data byte to select the 2-bit value from
 // outputs
-//   uint8_t - 2 bit attribute data for corresponding quadrant
+//   uint8_t - 2-bit attribute data for corresponding quadrant
 /*
  * 
 
