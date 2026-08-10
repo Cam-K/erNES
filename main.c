@@ -299,14 +299,15 @@ int main(int argc, char* argv[]){
   #endif
 
 
-  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0 && NESEMU == 1){
+  #if NESEMU == 1
+  if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0){
 
     if(argc >= 2){
       startNes(argv[1], atoi(screenScaling));
     }
  
   }
-
+  #endif
   printHelp();
   
 
