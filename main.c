@@ -202,8 +202,9 @@ int main(int argc, char* argv[]){
   }
 
   
+  #if NESEMU == 0
   // start Tom Harte's tester
-  if(jFlag == 1 && NESEMU == 0){
+  if(jFlag == 1){
     Bus bus;
     initBus(&bus, 1);
     initMemStruct(&(bus.memArr[0]), 0xffff, Ram, TRUE);
@@ -216,13 +217,14 @@ int main(int argc, char* argv[]){
 
   
   }
+  #endif
       
  
 
 
   // Basic file handling
   // Loads file contents into Rom bank
-
+  #if NESEMU == 0
   if(fFlag == 1){
     Bus bus;
     initMemStruct(&(bus.memArr[0]) , 0xbfff, Ram, TRUE);
@@ -261,13 +263,19 @@ int main(int argc, char* argv[]){
     interpreter(&bus);
   } 
 
-  if(nFlag == 1 && NESEMU == 1){
+  #endif
+
+  #if NESEMU == 1
+  if(nFlag == 1){
     startNes(file, atoi(screenScaling));
   }
+
+  #endif
   
   // starts interpreter with no file
   // - empty chunk of 64k memory 
-  if(iFlag == 1 && NESEMU == 0){
+  #if NESEMU == 0
+  if(iFlag == 1){
     Bus bus;
     printf("Starting interpreter \n");
     initBus(&bus, 1);
@@ -279,13 +287,16 @@ int main(int argc, char* argv[]){
 
 
   }
+  #endif
 
-  if(dFlag == 1 && NESEMU == 0){
+  #if NESEMU == 0
+  if(dFlag == 1){
 
     // starts json tester in batch mode (i.e. completes all the tom harte tests that reside in a directory
     jsonTesterBatch(fileDirectory);
   }
 
+  #endif
 
 
   if(fFlag == 0 && hFlag == 0 && nFlag == 0 && iFlag == 0 && sFlag == 0 && dFlag == 0 && NESEMU == 1){
@@ -651,12 +662,13 @@ void startNes(char* romPath, int screenScaling){
         // we need to allocate the two nametables.
         initPpu(bus.ppu, (numOfChrRoms * 2) + 2);
       } else if(numOfChrRoms == 0){
-        // 4 because we need to allocate memory for both pattern tables and the two nametables
+        // 4 because we need to allocate memory for both CHR-RAM (two 4KB chunks) and the two nametables
         initPpu(bus.ppu, 4);
       }
       populatePalette(bus.ppu);
 
       if(numOfChrRoms == 0){
+        // no chr-rom means 8KB CHR-RAM
         initMemStruct(&(bus.ppu->ppubus->memArr[0]), 0x1000, Ram, TRUE);
         initMemStruct(&(bus.ppu->ppubus->memArr[1]), 0x1000, Ram, TRUE);
         initMemStruct(&(bus.ppu->ppubus->memArr[2]), 0x400, Ram, TRUE);
@@ -668,7 +680,7 @@ void startNes(char* romPath, int screenScaling){
           initMemStruct(&(bus.ppu->ppubus->memArr[i]), 0x1000, Rom, TRUE);
         }
 
-        // last two Mem structs are CHR-RAM
+        // last two Mem structs are nametables
         initMemStruct(&(bus.ppu->ppubus->memArr[numOfChrRoms * 2]), 0x400, Ram, TRUE);
         initMemStruct(&(bus.ppu->ppubus->memArr[(numOfChrRoms * 2) + 1]), 0x400, Ram, TRUE);
 

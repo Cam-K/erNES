@@ -834,7 +834,6 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
       case 0:
         return ppu->ppubus->memArr[0].contents[addr];
       case 1:
-        // if chr-rom mode bit is equal to zero
         if(getBit(ppu->mmc1Copy.control.reg, 4) == 0){
           MMC1Register temp; 
           temp.reg = ppu->mmc1Copy.chrBank0.reg;
@@ -850,8 +849,6 @@ uint8_t readPpuBus(PPU* ppu, uint16_t addr){
            } else if(addr >= 0x1000){
              return ppu->ppubus->memArr[(temp.reg & 0b11110) + 1].contents[addr - 0x1000];
            }
-
-          // if chr-rom mode bit is equal to one
         } else if(getBit(ppu->mmc1Copy.control.reg, 4) != 0){
            if(addr <= 0xfff){
              return ppu->ppubus->memArr[ppu->mmc1Copy.chrBank0.reg].contents[addr];
@@ -953,7 +950,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
         return;
       }
     } else if(ppu->mapper == 1){
-
+      // switch 8kb at a time
       if(getBit(ppu->mmc1Copy.control.reg, 4) == 0){
           uint8_t temp; 
           temp = ppu->mmc1Copy.chrBank0.reg;
@@ -965,7 +962,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
             temp = temp & 0b1111;
           } 
         if(addr <= 0xfff){
-          if(ppu->ppubus->memArr[temp & 0b1111].type == Ram){
+          if(ppu->ppubus->memArr[temp & 0b11110].type == Ram){
             ppu->ppubus->memArr[temp & 0b11110].contents[addr] = val;
           } else {
             return;
@@ -978,7 +975,7 @@ void writePpuBus(PPU* ppu, uint16_t addr, uint8_t val){
           }
         }
 
-          // if chr-rom mode bit is equal to one
+          // switching two seperate 4KB banks
       } else if(getBit(ppu->mmc1Copy.control.reg, 4) != 0){
         if(addr <= 0xfff){
           if(ppu->ppubus->memArr[ppu->mmc1Copy.chrBank0.reg].type == Ram){

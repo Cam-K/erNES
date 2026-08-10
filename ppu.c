@@ -340,7 +340,6 @@ void pollKeyboard(Bus* bus){
 
 // drawFramebuffer()
 //   draws Framebuffer to background layer in sdl 
-//   also converts the nes colour palette to rgb values when reading from the frame buffer
 void drawFrameBuffer(Bus* bus){
   //printf("drawing framebuffer \n");
   uint32_t *pixels;
@@ -1099,7 +1098,7 @@ void spriteEvaluationAndProcess(PPU* ppu){
 
 
 // tickPpu()
-//     ticks the ppu forward one cycle (1 PPU cycle produces 1 dot between scanlines 0-239 and dots 1-256)
+//     ticks the ppu forward one cycle (1 PPU cycle produces 1 pixel between scanlines 0-239 and dots 1-256)
 void tickPpu(Bus* bus){
   uint16_t tempV;
 
@@ -1231,7 +1230,6 @@ void tickPpu(Bus* bus){
 
 
     drawFrameBuffer(bus);
-
 
   } 
 

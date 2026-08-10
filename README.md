@@ -43,7 +43,7 @@ erNES requires cjson and SDL2 to be installed on your system. These can be insta
 ``./ernes -h``
 
 ### To run a game
-``./ernes -n [FILE]``
+``./ernes -n game.nes``
 
 
 
